@@ -10,7 +10,8 @@ app.post('/signin', function (request, response) {
 	response.writeHead(200, {'Content-Type': 'application/json'});
 
 	// replace this with ldap code 
-	let result = {"user": "ubuntu", "password": "1234"};
+	console.log("/signin");
+	let result = {"user": "dulaj", "password": "1234"};
 
 	if(request.body.username == 'dulaj' && request.body.password == "1"){
 		result["sharename"] = "dulaj";
@@ -34,19 +35,20 @@ app.get('/folder-list', function (request, response) {
 
 	// get the folder path from ldap db
 	if(user == "dulaj"){
-		folderpath = "/home/dulaj/dulaj";
+		folderpath = "/home/dulaj/dulaj/";
 	} else if(user == "anuradha"){
 		folderpath = "/home/dulaj/anuradha";
 	}
 	// end
 
-	let dirs = getDirectories(folderpath);
-	console.log(dirs);
+	let dirs = walkSync(folderpath);
+	response.end(JSON.stringify(dirs));
 
 })
 
 app.post('/list', function (request, response) {
 	response.writeHead(200, {'Content-Type': 'application/json'});
+	console.log("/list");
 	
 	let result = { "result": [ 
     {
@@ -82,3 +84,29 @@ function getDirectories (srcpath) {
   return fs.readdirSync(srcpath)
     .filter(file => fs.lstatSync(path.join(srcpath, file)).isDirectory())
 }
+
+var walkSync = function(dir) {  
+	var items = [];
+	if(dir[dir.length-1] != '/') dir=dir.concat('/')
+	files = fs.readdirSync(dir);
+
+	files.forEach(function(file) {
+	console.log(file);
+    if (fs.statSync(dir + file).isDirectory()) {
+    	var item = {};
+    	item['type'] = 'dir';
+    	item['name'] = file;
+    	item['path'] = dir + file;
+		item['children'] = (walkSync(dir + file + '/'));
+		items.push(item);
+    }
+    else {
+    	var item={};
+    	item['type'] = 'file';
+    	item['name'] = file;
+    	item['path'] = dir + file;
+     	items.push(item);
+    }
+  });
+  return items;
+};
