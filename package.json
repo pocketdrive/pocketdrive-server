@@ -1,0 +1,15 @@
+{
+  "name": "pocketdrive-server",
+  "version": "1.0.0",
+  "description": "Local server runnign at the Pocket Drive",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "DVios",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3"
+  }
+}
