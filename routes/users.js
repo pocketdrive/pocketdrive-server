@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var ldapClient = require('../utils/ldap_util').ldapClient;
 
 // /* GET users listing. */
 // router.get('/', function(req, res, next) {
