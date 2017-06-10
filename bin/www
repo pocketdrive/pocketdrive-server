@@ -7,8 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('pocketdrive-server:server');
 var http = require('http');
-var ldap = require('ldapjs');
-var ldapUtils = require('../utils/ldap_util');
+
+require('../utils/ldap_util');
 
 /**
  * Get port from environment and store in Express.
@@ -24,24 +24,8 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
- * Create ldap server
- * */
-
-var ldapServer = ldap.createServer();
-
-let pre = [ldapUtils.authorize, ldapUtils.loadpaswdfile];
-
-ldapServer.bind('cn=root', ldapUtils.bindUser);
-ldapServer.add('ou=users, o=PD', pre, ldapUtils.addUser);
-ldapServer.modify('ou=users, o=PD', pre, ldapUtils.modifyUser);
-ldapServer.del('ou=users, o=PD', pre, ldapUtils.deleteUser);
-ldapServer.search('o=PD', pre, ldapUtils.searchUser);
-/**
  * Listen on provided port, on all network interfaces.
  */
-ldapServer.listen(1389, '127.0.0.1', function() {
-    console.log('/etc/passwd LDAP server up at: %s', server.url);
-});
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);

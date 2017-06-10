@@ -1,14 +1,64 @@
 /**
  * Created by Ravidu on 6/9/17.
  */
-var fs = require('fs');
-var ldap = require('ldapjs');
-var spawn = require('child_process').spawn;
-const ldapClient = ldap.createClient({
-    url: 'ldap://127.0.0.1:1389'
-});
+const fs = require('fs');
+const ldap = require('ldapjs');
+const spawn = require('child_process').spawn;
+
+
+const pwdPath = './utils/passwords';//
+
+function authorize(req, res, next){
+    if (!req.connection.ldap.bindDN.equals('cn=root'))
+        return next(new ldap.InsufficientAccessRightsError());
+
+    return next();
+}
+
+function loadpaswdfile(req,res,next){
+
+    fs.readFile(`${pwdPath}`, 'utf8', function(err, data) {
+        if (err)
+            return next(new ldap.OperationsError(err.message));
+
+        req.users = {};
+
+        var lines = data.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+            if (!lines[i] || /^#/.test(lines[i]))
+                continue;
+
+            var record = lines[i].split(':');
+            if (!record || !record.length)
+                continue;
+
+            req.users[record[0]] = {
+                dn: 'cn=' + record[0] + ', ou=users, o=PD',
+                attributes: {
+                    cn: record[0],
+                    uid: record[2],
+                    gid: record[3],
+                    description: record[4],
+                    homedirectory: record[5],
+                    shell: record[6] || '',
+                    objectclass: 'unixUser'
+                }
+            };
+        }
+
+        return next();
+    });
+}
+
+let pre = [authorize, loadpaswdfile];
+
+/**
+ * Create ldap server
+ * */
+const ldapServer = ldap.createServer();
 
 function bindUser(req, res, next) {
+    console.log('Request Object :'+req);
     if (req.dn.toString() !== 'cn=root' || req.credentials !== 'secret')
         return next(new ldap.InvalidCredentialsError());
 
@@ -74,47 +124,6 @@ function addUser(req, res, next) {
     });
 }
 
-function authorize(req, res, next){
-    if (!req.connection.ldap.bindDN.equals('cn=root'))
-        return next(new ldap.InsufficientAccessRightsError());
-
-    return next();
-}
-
-function loadpaswdfile(req,res,next){
-
-    fs.readFile('/etc/passwd', 'utf8', function(err, data) {
-        if (err)
-            return next(new ldap.OperationsError(err.message));
-
-        req.users = {};
-
-        var lines = data.split('\n');
-        for (var i = 0; i < lines.length; i++) {
-            if (!lines[i] || /^#/.test(lines[i]))
-                continue;
-
-            var record = lines[i].split(':');
-            if (!record || !record.length)
-                continue;
-
-            req.users[record[0]] = {
-                dn: 'cn=' + record[0] + ', ou=users, o=PD',
-                attributes: {
-                    cn: record[0],
-                    uid: record[2],
-                    gid: record[3],
-                    description: record[4],
-                    homedirectory: record[5],
-                    shell: record[6] || '',
-                    objectclass: 'unixUser'
-                }
-            };
-        }
-
-        return next();
-    });
-}
 
 function modifyUser(req,res,next){
     if (!req.dn.rdns[0].cn || !req.users[req.dn.rdns[0].cn])
@@ -180,6 +189,7 @@ function deleteUser(req,res,next){
 }
 
 function searchUser(req,res,next){
+    console.log('searching users');
     Object.keys(req.users).forEach(function(k) {
         if (req.filter.matches(req.users[k].attributes))
             res.send(req.users[k]);
@@ -189,6 +199,20 @@ function searchUser(req,res,next){
     return next();
 }
 
+ldapServer.bind('cn=root',bindUser);
+ldapServer.add('ou=users, o=PD', pre, addUser);
+ldapServer.modify('ou=users, o=PD', pre, modifyUser);
+ldapServer.del('ou=users, o=PD', pre, deleteUser);
+ldapServer.search('o=PD', pre, searchUser);
+
+ldapServer.listen(1389, '127.0.0.1', function() {
+    console.log(`${pwdPath} LDAP server up at: ${ldapServer.url}`);
+});
+
+
+
+
+
 module.exports = {
     bindUser,
     addUser,
@@ -197,5 +221,4 @@ module.exports = {
     modifyUser,
     deleteUser,
     searchUser,
-    ldapClient
 };
