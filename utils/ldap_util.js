@@ -5,11 +5,18 @@ const fs = require('fs');
 const ldap = require('ldapjs');
 const spawn = require('child_process').spawn;
 
+let username = '';
 
 const pwdPath = './utils/passwords';//
+let pre = [authorize, loadpaswdfile];
+
+/**
+ * Create ldap server
+ * */
+const ldapServer = ldap.createServer();
 
 function authorize(req, res, next){
-    if (!req.connection.ldap.bindDN.equals('cn=root'))
+    if (!req.connection.ldap.bindDN.equals('cn=root') )
         return next(new ldap.InsufficientAccessRightsError());
 
     return next();
@@ -50,20 +57,19 @@ function loadpaswdfile(req,res,next){
     });
 }
 
-let pre = [authorize, loadpaswdfile];
-
-/**
- * Create ldap server
- * */
-const ldapServer = ldap.createServer();
 
 function bindUser(req, res, next) {
-    console.log('Request Object :'+req);
-    if (req.dn.toString() !== 'cn=root' || req.credentials !== 'secret')
+    username = req.dn.toString();
+    if ((req.dn.toString() === 'cn=root' &&
+        req.credentials === 'secret') || (req.dn.toString() === 'cn=anuradha' &&
+        req.credentials === 'an123') || (req.dn.toString() === 'cn=dulaj' &&
+        req.credentials === 'du123')) {
+        res.end();
+        return next();
+    }else{
         return next(new ldap.InvalidCredentialsError());
+    }
 
-    res.end();
-    return next();
 }
 
 function addUser(req, res, next) {
@@ -199,7 +205,7 @@ function searchUser(req,res,next){
     return next();
 }
 
-ldapServer.bind('cn=root',bindUser);
+ldapServer.bind(username,bindUser);
 ldapServer.add('ou=users, o=PD', pre, addUser);
 ldapServer.modify('ou=users, o=PD', pre, modifyUser);
 ldapServer.del('ou=users, o=PD', pre, deleteUser);

@@ -11,33 +11,22 @@ const ldapClient = ldap.createClient({
 });
 
 router.post('/sign-in', function(req, res, next) {
-    res.writeHead(200, {'Content-Type': 'application/json'});
+   // res.writeHead(200, {'Content-Type': 'application/json'});
 
-    // replace this with ldap code
-    console.log("/signin");
-
-    // ###########################
     let username = req.body.username ;
     let password = req.body.password ;
 
 
     ldapClient.bind(`cn=${username}`, `${password}`, function (err) {
         if (err) {
-            return console.log('Binding error ', err);
+            console.log('Binding error ', err);
         }else{
-            return console.log('success');
+            console.log('success');
         }
     });
 
-    // const client = ldapClient;
-    console.log('Here');
-
 
     // ###########################
-
-
-
-
 
     let result = {"user": "dulaj", "password": "1234"};
     //
