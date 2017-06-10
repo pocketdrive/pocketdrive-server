@@ -7,7 +7,7 @@ var ldapClient = require('../utils/ldap_util').ldapClient;
 //   res.send('respond with a resource');
 // });
 
-router.post('sign-in', function(req, res, next) {
+router.post('/sign-in', function(req, res, next) {
     res.writeHead(200, {'Content-Type': 'application/json'});
 
     // replace this with ldap code

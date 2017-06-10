@@ -12,6 +12,7 @@ exports.allFilesFolders = function(dir) {
             item['name'] = file;
             item['path'] = dir + file
             item['permission'] = 'rw';		// this value should be read from db
+            item['owner'] = 'me';      // this value should be read from db
             item['children'] = (exports.allFilesFolders(dir + file + '/'));
             items.push(item);
         }
@@ -39,6 +40,7 @@ exports.allFolders = function(dir) {
             item['name'] = file;
             item['path'] = dir + file
             item['permission'] = 'rw';		// this value should be read from db
+            item['owner'] = 'me';      // this value should be read from db
             item['children'] = (exports.allFolders(dir + file + '/'));
             items.push(item);
         }
