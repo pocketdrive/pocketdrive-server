@@ -31,7 +31,7 @@ exports.allFilesFolders = function(dir) {
 exports.allFolders = function(dir) {
     var items = [];
     if(dir[dir.length-1] != '/') dir=dir.concat('/')
-    files = fs.readdirSync(dir);
+    let files = fs.readdirSync(dir);
 
     files.forEach(function(file) {
         if (fs.statSync(dir + file).isDirectory()) {
