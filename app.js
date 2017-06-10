@@ -8,7 +8,7 @@ var bodyParser = require('body-parser');
 
 var users = require('./routes/users');
 var folder_listing = require('./routes/folder_listing');
-var share_folder = require('./routes/share_folder');
+// var share_folder = require('./routes/share_folder');
 
 var app = express();
 
@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', users);
 app.use('/folder-list',folder_listing);
-app.use('/share-folder',share_folder);
+// app.use('/share-folder',share_folder);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
