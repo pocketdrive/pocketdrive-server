@@ -1,10 +1,6 @@
-// var express = require('express');
 import express from 'express';
 var router = express.Router();
 var ldap = require('ldapjs');
-
-const sambaserver = '1234';
-const user = 'dvios-2';
 
 const ldapClient = ldap.createClient({
     url: 'ldap://127.0.0.1:1389'
@@ -24,17 +20,13 @@ router.post('/sign-in', function(req, res, next) {
             result['success']= false;
         }else{
             console.log('success');
-            result['sharename']='shared1';
-            result['password']=sambaserver;
-            result['user']= user;
             result['success']= true;
+            result['password']= process.env.SMBPASSWD;
+            result['user']= process.env.SMBUSER;
+            result['sharename']= username;
         }
         res.send(JSON.stringify(result));
     });
-
-
-
-
 });
 
 module.exports = router;
