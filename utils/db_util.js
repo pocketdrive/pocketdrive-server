@@ -103,7 +103,7 @@ export class DBHandler {
                 console.error('DB ERROR', err);
             }
             if (numRemoved === 0) {
-                console.info(`shared content owned by ${ownder} shared with ${candidate} with path ${path} not found`);
+                console.info(`shared content owned by ${shareObj.ownder} shared with ${shareObj.candidate} with path ${shareObj.path} not found`);
             }
         });
     }
