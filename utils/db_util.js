@@ -7,7 +7,12 @@ const userDb = new DataStore({filename: process.env.NE_DB_PATH_USER, autoload: t
 const accessDb = new DataStore({filename: process.env.NE_DB_PATH_ACCESS, autoload: true});
 
 export class DBHandler {
-
+    /**
+     * JSON {
+     *      username: string
+     *      password: string
+     * }
+     * */
     addUser(userObj) {
         userDb.insert(userObj, function (err, newDoc) {
             if (err) {
@@ -16,34 +21,91 @@ export class DBHandler {
         });
     }
 
+    /**
+     * Get the user given the username
+     * returns { username, password}
+     * */
     searchUser(username) {
-        userDb.findOne({username: username}, function (err, doc) {
-            if (err) {
-                console.error('DB ERROR', err);
-            }
-            if (doc === null) {
-                console.info(`user ${username} no found`);
-            }
-        });
+        return userDb.findOne({username: username});
     }
 
+    /**
+     * Remove user given the username
+     * */
     removeUser(username) {
         userDb.remove({username: username}, {}, function (err, numRemoved) {
             if (err) {
                 console.error('DB ERROR', err);
             }
             if (numRemoved === 0) {
-                console.info(`user ${username} no found`);
+                console.info(`user ${username} not found`);
             }
         });
     }
 
-    getAccessByUser(username) {
-
+    /**
+     * JSON {
+     *      username: string
+     *      password: string
+     * }
+     * */
+    updateUser(userObj) {
+        userDb.update({username: userObj.username}, {password: userObj.password}, function (err, numReplaced) {
+            if (err) {
+                console.error('DB ERROR', err);
+            }
+            if (numReplaced === 0) {
+                console.info(`Could not find any matching document for username ${userObj.username}`);
+            }
+        })
     }
 
-    updateUser() {
+    /**
+     * JSON {
+     *      owner: owner of the folder.file
+     *      candidate: with whom the content is shared
+     *      path: file path
+     *      access: access level r, w
+     * }
+     * */
+    shareFileFolder(shareObj) {
+        accessDb.insert(shareObj, function (err, newDoc) {
+            if (err) {
+                console.error('DB ERROR', err);
+            }
+        });
+    }
 
+    /**
+     * Get the cursor for shared content given the owner name
+     * */
+    getSharedContent(username) {
+        return accessDb.find({owner: username});
+    }
+
+    /**
+     * Get the cursor for shared content given the candidate name
+     * */
+    getSharedWithMeContent(candidate) {
+        return accessDb.find({candidate: candidate});
+    }
+
+    /**
+     * JSON {
+     *      owner: owner of the folder.file
+     *      candidate: with whom the content is shared
+     *      path: file path
+     * }
+     * */
+    revokeAccess(shareObj) {
+        accessDb.remove(shareObj, function (err, numRemoved) {
+            if (err) {
+                console.error('DB ERROR', err);
+            }
+            if (numRemoved === 0) {
+                console.info(`shared content owned by ${ownder} shared with ${candidate} with path ${path} not found`);
+            }
+        });
     }
 
 }
