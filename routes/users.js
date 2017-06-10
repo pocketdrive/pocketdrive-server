@@ -3,6 +3,8 @@ import express from 'express';
 var router = express.Router();
 var ldap = require('ldapjs');
 
+import {DBHandler} from '../utils/db_util';
+
 const sambaserver = '1234';
 const user = 'dvios-2';
 
@@ -10,29 +12,29 @@ const ldapClient = ldap.createClient({
     url: 'ldap://127.0.0.1:1389'
 });
 
-router.post('/sign-in', function(req, res, next) {
-   res.set('Content-Type', 'application/json');
+router.post('/sign-in', function (req, res, next) {
+    res.set('Content-Type', 'application/json');
 
-    let result ={};
-    let username = req.body.username ;
-    let password = req.body.password ;
+    let result = {};
+    let username = req.body.username;
+    let password = req.body.password;
 
+    var dbh = new DBHandler();
+    dbh.addUser({username: username});
 
     ldapClient.bind(`cn=${username}`, `${password}`, function (err) {
         if (err) {
             console.log('Binding error ', err);
-            result['success']= false;
-        }else{
+            result['success'] = false;
+        } else {
             console.log('success');
-            result['sharename']='shared1';
-            result['password']=sambaserver;
-            result['user']= user;
-            result['success']= true;
+            result['sharename'] = 'shared1';
+            result['password'] = sambaserver;
+            result['user'] = user;
+            result['success'] = true;
         }
         res.send(JSON.stringify(result));
     });
-
-
 
 
 });
