@@ -11,7 +11,7 @@ exports.allFilesFolders = function(dir) {
             item['type'] = 'dir';
             item['name'] = file;
             item['path'] = dir + file
-            item['permission'] = 'w';		//TODO: this value should be read from db. Hint: Maintain a hash for all shared folders in a key value db. key is folder path. vakue is permission. do same for owner attribute. another approach is /etc/mtab file.
+            item['permission'] = 'w';       //TODO: this value should be read from db. Hint: Maintain a hash for all shared folders in a key value db. key is folder path. vakue is permission. do same for owner attribute. another approach is /etc/mtab file.
             item['owner'] = 'me';      //TODO: this value should be read from db
             item['children'] = (exports.allFilesFolders(dir + file + '/'));
             items.push(item);
@@ -21,7 +21,7 @@ exports.allFilesFolders = function(dir) {
             item['type'] = 'file';
             item['name'] = file;
             item['path'] = dir + file;
-            item['permission'] = 'w';		//TODO: this value should be read from db
+            item['permission'] = 'w';       //TODO: this value should be read from db
             items.push(item);
         }
     });
@@ -39,7 +39,7 @@ exports.allFolders = function(dir) {
             item['type'] = 'dir';
             item['name'] = file;
             item['path'] = dir + file
-            item['permission'] = 'w';		//TODO: this value should be read from db
+            item['permission'] = 'w';       //TODO: this value should be read from db
             item['owner'] = 'me';      //TODO: this value should be read from db
             item['children'] = (exports.allFolders(dir + file + '/'));
             items.push(item);
