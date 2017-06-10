@@ -1,3 +1,4 @@
+import {DBHandler} from '../utils/db_util';
 import express from 'express';
 var router = express.Router();
 var ldap = require('ldapjs');
