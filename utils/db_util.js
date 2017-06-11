@@ -65,7 +65,7 @@ export class DBHandler {
      *      owner: owner of the folder.file
      *      candidate: with whom the content is shared
      *      path: file path
-     *      access: access level r, w
+     *      permission: access level r, w
      * }
      * */
     shareFileFolder(shareObj) {
