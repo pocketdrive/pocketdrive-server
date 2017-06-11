@@ -5,7 +5,7 @@ var _ = require('lodash');
 var fs = require('fs');
 
 const dir = '/Users/anuradhawick';
-const filename = 'Documents-2';
+const filename = 'Docs';
 const files = fs.readdirSync(dir);
 let similarStart = [];
 _.each(files, (file) => {
@@ -20,6 +20,7 @@ _.each(files, (file) => {
 
 if (_.isEmpty(similarStart) || _.findIndex(similarStart, (obj) => _.isEqual(obj, filename)) === -1) {
     console.log(`File name possible ${filename}`);
+    return filename;
 } else {
     let candidateName = filename;
     for (let i = 1; i <= 100; i++) {
@@ -27,7 +28,7 @@ if (_.isEmpty(similarStart) || _.findIndex(similarStart, (obj) => _.isEqual(obj,
         candidateName = `${filename}-${i}`;
         if (_.findIndex(similarStart, (obj) => _.isEqual(obj, candidateName)) === -1) {
             console.log(`Candidate name: ${candidateName}`);
-            return;
+            return candidateName;
         }
     }
     console.error(`Failed, performing last resort`);
