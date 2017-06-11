@@ -18,8 +18,10 @@ router.post('/', function(req, res, next) {
 
     //TODO: do a username_to validation here with ldap
 
+    console.log('1 permission = ' + permission);
     permission = (permission == 'r') ? '-r' : '';
-    let src = process.env.ROOT_FOLDER + '/' + username_from + '/' + path;
+    console.log('2 permission = ' + permission);
+    let src = path;
     let dest = process.env.ROOT_FOLDER + '/' + username_to + '/' + folder_name;
 
     let createDirCmd = 'mkdir ' + dest;
