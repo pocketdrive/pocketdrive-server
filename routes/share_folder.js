@@ -1,9 +1,10 @@
+const utils = require('../utils/utils');
 var express = require('express');
 var router = express.Router();
 let exec = require('child_process').exec;
 
 router.post('/', function(req, res, next) {
-    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.set('Content-Type', 'application/json');
 
     // replace this with ldap code
     console.log("/share-folder");
@@ -18,24 +19,23 @@ router.post('/', function(req, res, next) {
 
     //TODO: do a username_to validation here with ldap
 
-    console.log('1 permission = ' + permission);
     permission = (permission == 'r') ? '-r' : '';
-    console.log('2 permission = ' + permission);
     let src = path;
-    let dest = process.env.ROOT_FOLDER + '/' + username_to + '/' + folder_name;
+    let dest = process.env.ROOT_FOLDER + '/' + username_to + '/' + process.env.SHARED_FOLDER_NAME + '/' + username_from;
+    dest = '/' + utils.getAvailableName(dest, folder_name);
 
-    let createDirCmd = 'mkdir ' + dest;
+    let createDirCmd = 'mkdir ' + `${dest}`;
     let mountCmd = 'sudo mount ' + src + ' ' + dest + ' --bind ' + permission;
 
     //TODO: update the database about sharing activity
 
     console.log(createDirCmd);
-    console.log(mountCmd);
-
     exec(createDirCmd, function(error, stdout, stderr){
         if(error){
             result['success'] = false;
             result['error'] = 'Creating shared folder failed';
+            console.error('Creating shared folder failed');
+            console.error(error);
             res.end(JSON.stringify(result));
         } else{
             console.log(mountCmd);
@@ -43,6 +43,8 @@ router.post('/', function(req, res, next) {
                 if(error){
                     result['success'] = false;
                     result['error'] = 'Mounting shared folder failed';
+                    console.error('Mounting shared folder failed');
+                    console.error(error);
                     res.end(JSON.stringify(result));
                 } else{
                     result['success'] = true;
