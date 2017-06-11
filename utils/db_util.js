@@ -14,9 +14,16 @@ export class DBHandler {
      * }
      * */
     addUser(userObj) {
-        userDb.insert(userObj, function (err, newDoc) {
-            if (err) {
-                console.error('DB ERROR', err);
+        // find if there is a user already and abort action
+        userDb.findOne({ username: userObj.username}, function (err, doc) {
+            if (doc !== null) {
+                console.warn('User already exists', doc);
+            } else {
+                userDb.insert(userObj, function (err, newDoc) {
+                    if (err) {
+                        console.error('DB ERROR', err);
+                    }
+                });
             }
         });
     }
