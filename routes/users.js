@@ -11,7 +11,7 @@ router.post('/sign-in', function (req, res, next) {
         password: sha256(req.body.password)
     };
     let result = {
-        success: false
+        success: false,
     };
 
     // Obtain user
@@ -19,6 +19,9 @@ router.post('/sign-in', function (req, res, next) {
         // Check hash
         if (doc.password === userData.password) {
             result.success = true;
+            result['user'] = process.env.SMBUSER,
+            result['password'] = process.env.SMBPASSWD,
+            result['sharename'] = userData.username
         }
         res.set('Content-Type', 'application/json');
         res.send(result);
