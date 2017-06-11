@@ -15,10 +15,10 @@
     "dotenv": "^4.0.0",
     "express": "~4.15.2",
     "jade": "~1.11.0",
-    "ldapjs": "^1.0.1",
     "lodash": "^4.17.4",
     "morgan": "~1.8.1",
     "nedb": "^1.8.0",
-    "serve-favicon": "~2.4.2"
+    "serve-favicon": "~2.4.2",
+    "sha256": "^0.2.0"
   }
 }

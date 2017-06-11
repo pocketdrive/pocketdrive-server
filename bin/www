@@ -7,8 +7,6 @@ var app = require('../app');
 var debug = require('debug')('pocketdrive-server:server');
 var http = require('http');
 
-require('../utils/ldap_util');
-
 /**
  * Get port from environment and store in Express.
  */

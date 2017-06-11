@@ -2,7 +2,7 @@
  * Created by Ravidu on 6/9/17.
  */
 const fs = require('fs');
-const ldap = require('ldapjs');
+
 const spawn = require('child_process').spawn;
 
 let username = '';
