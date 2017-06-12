@@ -69,13 +69,14 @@ export class DBHandler {
 
     /**
      * JSON {
-     *      owner: owner of the folder.file
+     *      owner: owner of the folder
      *      candidate: with whom the content is shared
-     *      path: file path
-     *      permission: access level r, w
+     *      src_path: file path of the source
+     *      dest_path: file path of the destination
+     *      permission: access level (r, w)
      * }
      * */
-    shareFileFolder(shareObj) {
+    shareFolder(shareObj) {
         accessDb.insert(shareObj, function (err, newDoc) {
             if (err) {
                 console.error('DB ERROR', err);
@@ -110,7 +111,7 @@ export class DBHandler {
                 console.error('DB ERROR', err);
             }
             if (numRemoved === 0) {
-                console.info(`shared content owned by ${shareObj.ownder} \
+                console.info(`shared content owned by ${shareObj.owner} \
                 shared with ${shareObj.candidate} with path ${shareObj.path} not found`);
             }
         });
