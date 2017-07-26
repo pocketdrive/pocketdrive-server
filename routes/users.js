@@ -1,4 +1,4 @@
-import {DBHandler} from '../utils/db_util';
+import { DBHandler } from '../utils/db_util';
 import express from 'express';
 import sha256 from 'sha256';
 
