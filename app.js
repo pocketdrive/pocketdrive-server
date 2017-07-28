@@ -13,6 +13,22 @@ var share_folder = require('./routes/share_folder');
 
 var app = express();
 
+// import {Synchronizer} from './SyncEngine/Synchronizer';
+// import fs from 'fs';
+// let syn = new Synchronizer();
+//
+// async function main() {
+//   "use strict";
+//   let oldChunks = await syn.getChunks('/Users/anuradhawick/Documents/FYP\ work/file_sync/target/B.pdf');
+//   let newChunks = await syn.getChunks('/Users/anuradhawick/Documents/FYP\ work/file_sync/A.pdf');
+//   let transmit = await syn.getTransmissionData(oldChunks, newChunks, fs.readFileSync('/Users/anuradhawick/Documents/FYP\ work/file_sync/A.pdf'));
+//
+//   syn.updateOldFile(transmit,'/Users/anuradhawick/Documents/FYP\ work/file_sync/target/B.pdf').then();
+//
+// }
+//
+// main();
+
 // view engine setup
 // app.set('views', path.join(__dirname, 'views'));
 // app.set('view engine', 'jade');
