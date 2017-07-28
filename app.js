@@ -13,6 +13,17 @@ var share_folder = require('./routes/share_folder');
 
 var app = express();
 
+import {Communicator} from './Communicator/Communicator';
+
+let cm = new Communicator();
+async function main() {
+  "use strict";
+  await cm.connectToCentralServer('anuradha', 'device1234');
+  await cm.requestOnlineDevices();
+
+}
+main()
+
 // import {Synchronizer} from './SyncEngine/Synchronizer';
 // import fs from 'fs';
 // let syn = new Synchronizer();
