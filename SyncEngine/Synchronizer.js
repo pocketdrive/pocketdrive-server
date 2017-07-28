@@ -12,16 +12,16 @@ export class Synchronizer {
         let hashFilename = `${uuid()}`;
         await new Promise((resolve) => {
             cmd.get(
-                `/Users/anuradhawick/Documents/pocketdrive-server/node_modules/.bin/rabin "${filename}" \
+                `./node_modules/.bin/rabin "${filename}" \
                 --bits=8 --min=512 --max=65536 > \
-                /Users/anuradhawick/Documents/pocketdrive-server/SyncEngine/${hashFilename}`,
+                ./${hashFilename}`,
                 () => resolve()
             );
         });
 
-        let file = fs.readFileSync(`/Users/anuradhawick/Documents/pocketdrive-server/SyncEngine/${hashFilename}`);
+        let file = fs.readFileSync(`./${hashFilename}`);
         let out = file.toString();
-        fs.unlink(`/Users/anuradhawick/Documents/pocketdrive-server/SyncEngine/${hashFilename}`, () => {
+        fs.unlink(`./${hashFilename}`, () => {
         });
 
         try {
