@@ -13,7 +13,7 @@ var share_folder = require('./routes/share_folder');
 
 var app = express();
 
-import {Communicator} from './Communicator/Communicator';
+import {Communicator} from './communicator/Communicator';
 
 let cm = new Communicator();
 async function main() {

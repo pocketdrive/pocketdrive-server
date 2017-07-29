@@ -35,9 +35,9 @@ export class Synchronizer {
     }
 
     async getTransmissionData(oldFileChunks, newFileChunks, newFileBuffer) {
-        let cs = oldFileChunks;// await getChunks('./target/Han - Data Mining Concepts and Techniques 3rd Edition - 2012.pdf');
-        let cs_new = newFileChunks;// await getChunks('Han - Data Mining Concepts and Techniques 3rd Edition - 2012.pdf');
-        let new_file = newFileBuffer;// fs.readFileSync('Han - Data Mining Concepts and Techniques 3rd Edition - 2012.pdf');
+        let cs = oldFileChunks;
+        let cs_new = newFileChunks;
+        let new_file = newFileBuffer;
         let old_data = [];
         let new_data = [];
 
