@@ -29,9 +29,11 @@ export class Communicator {
     }
 
     async connectToCentralServer(username, deviceId) {
+        // TODO improve this
         if (!connected) {
             await promise;
         }
+
         const msg = {
             type: "registerDevice",
             data: {username: username, deviceId: deviceId}
@@ -40,6 +42,7 @@ export class Communicator {
         ws.send(
             JSON.stringify(msg)
         );
+
         const data = await this.getMessageAsync();
         console.log(data)
     }
@@ -55,6 +58,7 @@ export class Communicator {
         ws.send(
             JSON.stringify(msg)
         );
+
         const data = await this.getMessageAsync();
         console.log(data)
     }
