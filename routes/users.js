@@ -5,14 +5,13 @@ import sha256 from 'sha256';
 const router = express.Router();
 const dbh = new DBHandler();
 
-router.post('/sign-in', function (req, res, next) {
+router.post('/signin', function (req, res, next) {
     const userData = {
         username: req.body.username,
         password: sha256(req.body.password)
     };
-    let result = {
-        success: false,
-    };
+
+    let result = { success: false };
 
     // Obtain user
     dbh.searchUser(userData.username).exec((err, doc) => {
@@ -26,6 +25,22 @@ router.post('/sign-in', function (req, res, next) {
         res.set('Content-Type', 'application/json');
         res.send(result);
     });
+});
+
+router.post('/signup', function (req, res, next) {
+    console.log('sign up');
+    let data = req.body.data;
+    
+    const userData = {
+        username: data.username,
+        password: sha256(data.password),
+        firstname: data.firstname,
+        lastname: data.lastname
+    }; 
+
+    res.set('Content-Type', 'application/json');
+    
+    res.send(dbh.addUser(userData));
 });
 
 module.exports = router;

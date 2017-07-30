@@ -20,7 +20,6 @@ async function main() {
   "use strict";
   await cm.connectToCentralServer('anuradha', 'device1234');
   await cm.requestOnlineDevices();
-
 }
 main()
 

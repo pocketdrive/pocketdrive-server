@@ -24,7 +24,6 @@ let promise = new Promise(resolve => {
     });
 });
 
-
 export class Communicator {
     constructor() {
     }

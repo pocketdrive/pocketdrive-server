@@ -17,14 +17,20 @@ export class DBHandler {
         // find if there is a user already and abort action
         userDb.findOne({ username: userObj.username}, function (err, doc) {
             if (doc !== null) {
-                console.warn('User already exists', doc);
-            } else {
-                userDb.insert(userObj, function (err, newDoc) {
-                    if (err) {
-                        console.error('DB ERROR', err);
-                    }
-                });
-            }
+                delete doc.password; 
+                console.warn('Username already exists', doc);
+                return { success: false, error: 'Username already exists' };
+            }  
+
+            userDb.insert(userObj, function (err, newDoc) {
+                if (err) {
+                    console.error('Database error. Adding new user failed', err);
+                    return { success: false, error: 'Database error. Adding new user failed' };
+                } 
+
+                return { success: true };
+            });
+            
         });
     }
 
@@ -111,7 +117,7 @@ export class DBHandler {
                 console.error('DB ERROR', err);
             }
             if (numRemoved === 0) {
-                console.info(`shared content owned by ${shareObj.owner} \
+                console.info(`shared content owned by ${shareObj.owner};
                 shared with ${shareObj.candidate} with path ${shareObj.path} not found`);
             }
         });
