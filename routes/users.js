@@ -28,7 +28,6 @@ router.post('/signin', function (req, res, next) {
 });
 
 router.post('/signup', function (req, res, next) {
-    console.log('sign up');
     let data = req.body.data;
     
     const userData = {
@@ -38,9 +37,13 @@ router.post('/signup', function (req, res, next) {
         lastname: data.lastname
     }; 
 
-    res.set('Content-Type', 'application/json');
-    
-    res.send(dbh.addUser(userData));
+    let result = { success: false };
+
+    dbh.addUser(userData, (result) => {
+        res.set('Content-Type', 'application/json');
+        res.send(result);
+    });
+
 });
 
 module.exports = router;

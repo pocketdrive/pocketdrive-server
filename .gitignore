@@ -61,7 +61,3 @@ typings/
 
 .idea/
 *.iml
-
-# custom ignores
-access.db
-users.db

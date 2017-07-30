@@ -13,24 +13,27 @@ export class DBHandler {
      *      password: string
      * }
      * */
-    addUser(userObj) {
-        // find if there is a user already and abort action
+    addUser(userObj, onResult) {
+        let result = { success: false };
+
         userDb.findOne({ username: userObj.username}, function (err, doc) {
             if (doc !== null) {
                 delete doc.password; 
                 console.warn('Username already exists', doc);
-                return { success: false, error: 'Username already exists' };
-            }  
+                result['error'] = 'Username already exists';
+                onResult(result);
+            } else {
+                userDb.insert(userObj, function (err, newDoc) {
+                    if (err) {
+                        console.error('Database error. Adding new user failed', err);
+                        result['error'] = 'Database error. Adding new user failed';
+                    } else {
+                        result.success = true;
+                    }
 
-            userDb.insert(userObj, function (err, newDoc) {
-                if (err) {
-                    console.error('Database error. Adding new user failed', err);
-                    return { success: false, error: 'Database error. Adding new user failed' };
-                } 
-
-                return { success: true };
-            });
-            
+                    onResult(result);
+                });
+            }            
         });
     }
 
