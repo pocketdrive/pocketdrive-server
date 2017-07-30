@@ -16,11 +16,13 @@ router.post('/signin', function (req, res, next) {
     // Obtain user
     dbh.searchUser(userData.username).exec((err, doc) => {
         // Check hash
-        if (doc.password === userData.password) {
+        if (doc!=null && doc.password === userData.password) {
             result.success = true;
-            result['user'] = process.env.SMBUSER,
-            result['password'] = process.env.SMBPASSWD,
-            result['sharename'] = userData.username
+            result['data'] = {
+                smbUser: process.env.SMBUSER,
+                smbPassword: process.env.SMBPASSWD,
+                path: process.env.PD_FOLDER_PATH + userData.username
+            }
         }
         res.set('Content-Type', 'application/json');
         res.send(result);
