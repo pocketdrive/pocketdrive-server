@@ -1,4 +1,4 @@
-import { UserDbHandler   } from '../db/user_db';
+import { UserDbHandler   } from '../db/user-db';
 import express from 'express';
 import sha256 from 'sha256';
 // import sudo from 'sudo-prompt';

@@ -1,4 +1,4 @@
-import { UserDbHandler } from '../db/user_db';
+import { UserDbHandler } from '../db/user-db';
 
 const utils = require('../utils/file');
 var express = require('express');
