@@ -6,7 +6,6 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var users = require('./routes/users');
 var folder_listing = require('./routes/folder_listing');
 var share_folder = require('./routes/share_folder');

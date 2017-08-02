@@ -1,7 +1,7 @@
 /**
  * Created by anuradhawick on 7/29/17.
  */
-import PDPeer from './communicator/PDPeer';
+import PDPeer from './communicator/pd-peer';
 import fs from 'fs';
 // ./node_modules/.bin/babel-node --presets es2015 peertest.js
 async function main() {
@@ -10,7 +10,6 @@ async function main() {
 
     let p2 = new PDPeer(false, 'wick');
     s1.forEach((s) => {
-        "use strict";
         p2.setSignal(s)
     });
 
@@ -25,9 +24,12 @@ async function main() {
         "use strict";
         if (p1.isConnected()) {
             p2.receiveBuffer((buffer, info) => {
-                console.log(info)
+                console.log('at p2'+info)
             });
-            p1.sendBuffer(fs.readFileSync('/Users/anuradhawick/Documents/FYP work/peer-demo/B.pdf'));
+            p1.receiveBuffer((buffer, info) => {
+                console.log('at p1'+info)
+            });
+            p1.sendBuffer(fs.readFileSync('/Users/anuradhawick/Desktop/ltu-raf.avi'), 'file', 'somedata');
             clearInterval(i);
         }
     }, 1000);

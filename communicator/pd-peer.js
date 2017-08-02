@@ -86,7 +86,7 @@ export default class PDPeer {
         });
     }
 
-    async sendBuffer(buffer, info = null) {
+    async sendBuffer(buffer, type = null, data = null) {
         let file = buffer;
         let i = 0;
         let metaObj = {
@@ -95,7 +95,8 @@ export default class PDPeer {
             info: {
                 size: file.byteLength
             },
-            extraInfo: info // To be used at the user level
+            type: type,
+            data: data // To be used at the user level
         };
         this.peerObj.send(JSON.stringify(metaObj));
 
@@ -110,7 +111,6 @@ export default class PDPeer {
                 i = 0;
             }
             this.currentSendProgress = (1 - file.byteLength / metaObj.info.size) * 100;
-
         }
         metaObj.eof = true;
         metaObj.sof = false;
@@ -143,7 +143,7 @@ export default class PDPeer {
         });
     }
 
-    async setSignal(signal) {
+    setSignal(signal) {
         this.peerObj.signal(signal)
     }
 
@@ -174,14 +174,17 @@ export default class PDPeer {
         if (!isBuffer) {
             let obj = JSON.parse(data);
             if (obj.sof) {
-                this.receiveInfo = obj.info;
+                this.receiveInfo = {info: obj.info, type: obj.type, data: obj.data};
                 this.dataBuffer = new Buffer(0)
             } else if (obj.eof) {
                 this.currentReceiveProgress = 0;
                 this.callBacks.onMessage(this.dataBuffer, this.receiveInfo);
+            } else {
+                this.currentReceiveProgress = (this.dataBuffer.byteLength / this.receiveInfo.info.size) * 100;
+                this.dataBuffer = Buffer.concat([this.dataBuffer, data]);
             }
         } else {
-            this.currentReceiveProgress = (this.dataBuffer.byteLength / this.receiveInfo.size) * 100;
+            this.currentReceiveProgress = (this.dataBuffer.byteLength / this.receiveInfo.info.size) * 100;
             this.dataBuffer = Buffer.concat([this.dataBuffer, data]);
         }
     }
