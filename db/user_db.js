@@ -1,12 +1,10 @@
 /**
  * Created by anuradhawick on 6/10/17.
  */
-import DataStore from 'nedb';
 
-const userDb = new DataStore({filename: process.env.NE_DB_PATH_USER, autoload: true});
-const accessDb = new DataStore({filename: process.env.NE_DB_PATH_ACCESS, autoload: true});
+import * as databases from './dbs';
 
-export class DBHandler {
+export class UserDbHandler {
     /**
      * JSON {
      *      username: string
@@ -17,14 +15,14 @@ export class DBHandler {
         let result = { success: false };
 
         return new Promise((resolve) => {
-            userDb.findOne({ username: userObj.username}, function (err, doc) {
+            databases.userDb.findOne({ username: userObj.username}, function (err, doc) {
                 if (doc !== null) {
                     delete doc.password; 
                     console.warn('Username already exists', doc);
                     result['error'] = 'Username already exists';
                     resolve(result);
                 } else {
-                    userDb.insert(userObj, function (err, newDoc) {
+                    databases.userDb.insert(userObj, function (err, newDoc) {
                         if (err) {
                             console.error('Database error. Adding new user failed', err);
                             result['error'] = 'Database error. Adding new user failed';
@@ -44,14 +42,14 @@ export class DBHandler {
      * returns { username, password}
      * */
     searchUser(username) {
-        return userDb.findOne({username: username});
+        return databases.userDb.findOne({username: username});
     }
 
     /**
      * Remove user given the username
      * */
     removeUser(username) {
-        userDb.remove({username: username}, {}, function (err, numRemoved) {
+        databases.userDb.remove({username: username}, {}, function (err, numRemoved) {
             if (err) {
                 console.error('DB ERROR', err);
             }
@@ -68,7 +66,7 @@ export class DBHandler {
      * }
      * */
     updateUser(userObj) {
-        userDb.update({username: userObj.username}, {password: userObj.password}, function (err, numReplaced) {
+        databases.userDb.update({username: userObj.username}, {password: userObj.password}, function (err, numReplaced) {
             if (err) {
                 console.error('DB ERROR', err);
             }
@@ -127,5 +125,7 @@ export class DBHandler {
             }
         });
     }
+
+    
 
 }

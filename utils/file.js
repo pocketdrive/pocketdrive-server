@@ -60,9 +60,7 @@ export async function firstLevelFolders(dir) {
     }
     let files = fs.readdirSync(dir);
 
-    for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-
+    _.each(files, async (file) => {
         if (fs.statSync(dir + file).isDirectory()) {
             let item = {};
 
@@ -99,8 +97,8 @@ export async function firstLevelFolders(dir) {
             });
             items.push(item);
         }
-    }
-    console.log(items)
+    });
+    
     return items;
 };
 
