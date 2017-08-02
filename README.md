@@ -8,4 +8,4 @@ This is the server runs localy at every Pocket Drive
 
 ## How to run
     npm install
-    node start
+    sudo npm start

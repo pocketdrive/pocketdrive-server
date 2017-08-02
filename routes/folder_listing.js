@@ -1,4 +1,4 @@
-const utils = require('../utils/utils');
+const fileUtils = require('../utils/file');
 const express = require('express');
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.get('/', function (req, res, next) {
 
     console.log(folderpath);
 
-    let dirs = utils.allFolders(folderpath);
+    let dirs = fileUtils.allFolders(folderpath);
     res.end(JSON.stringify(dirs));
 });
 

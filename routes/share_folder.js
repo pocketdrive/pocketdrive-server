@@ -1,6 +1,6 @@
 import {DBHandler} from '../utils/db_util';
 
-const utils = require('../utils/utils');
+const utils = require('../utils/file');
 var express = require('express');
 let exec = require('child_process').exec;
 
