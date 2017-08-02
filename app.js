@@ -9,18 +9,19 @@ var bodyParser = require('body-parser');
 var users = require('./routes/users');
 var folder_listing = require('./routes/folder_listing');
 var share_folder = require('./routes/share_folder');
+var sync = require('./routes/sync');
 
 var app = express();
 
-import {Communicator} from './communicator/Communicator';
+// import {Communicator} from './communicator/Communicator';
 
-let cm = new Communicator();
-async function main() {
-  "use strict";
-  await cm.connectToCentralServer('anuradha', 'device1234');
-  await cm.requestOnlineDevices();
-}
-main()
+// let cm = new Communicator();
+// async function main() {
+//   "use strict";
+//   // await cm.connectToCentralServer('anuradha', 'device1234');
+//   // await cm.requestOnlineDevices();
+// }
+// main()
 
 // import {Synchronizer} from './SyncEngine/Synchronizer';
 // import fs from 'fs';
@@ -52,8 +53,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', users);
-app.use('/folder-list',folder_listing);
-app.use('/share-folder',share_folder);
+app.use('/folder-list', folder_listing);
+app.use('/share-folder', share_folder);
+app.use('/sync', sync);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

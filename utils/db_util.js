@@ -13,28 +13,30 @@ export class DBHandler {
      *      password: string
      * }
      * */
-    addUser(userObj, onResult) {
+    addUser(userObj) {
         let result = { success: false };
 
-        userDb.findOne({ username: userObj.username}, function (err, doc) {
-            if (doc !== null) {
-                delete doc.password; 
-                console.warn('Username already exists', doc);
-                result['error'] = 'Username already exists';
-                onResult(result);
-            } else {
-                userDb.insert(userObj, function (err, newDoc) {
-                    if (err) {
-                        console.error('Database error. Adding new user failed', err);
-                        result['error'] = 'Database error. Adding new user failed';
-                    } else {
-                        result.success = true;
-                    }
-
-                    onResult(result);
-                });
-            }            
+        return new Promise((resolve) => {
+            userDb.findOne({ username: userObj.username}, function (err, doc) {
+                if (doc !== null) {
+                    delete doc.password; 
+                    console.warn('Username already exists', doc);
+                    result['error'] = 'Username already exists';
+                    resolve(result);
+                } else {
+                    userDb.insert(userObj, function (err, newDoc) {
+                        if (err) {
+                            console.error('Database error. Adding new user failed', err);
+                            result['error'] = 'Database error. Adding new user failed';
+                        } else {
+                            result.success = true;
+                        }
+                        resolve(result);
+                    });
+                }            
+            });
         });
+            
     }
 
     /**

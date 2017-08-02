@@ -1,7 +1,9 @@
-let fs = require('fs');
+import fs from 'fs';
+import getSize from 'get-folder-size';
 import * as _ from 'lodash';
 
-exports.allFilesFolders = function (dir) {
+// Get all files and folders of the given path recursively
+export function allFilesFolders(dir) {
     var items = [];
     if (dir[dir.length - 1] != '/') dir = dir.concat('/')
     files = fs.readdirSync(dir);
@@ -29,7 +31,8 @@ exports.allFilesFolders = function (dir) {
     return items;
 };
 
-exports.allFolders = function (dir) {
+// Get all folders of the given path recursively
+export function allFolders(dir) {
     var items = [];
     if (dir[dir.length - 1] != '/') dir = dir.concat('/')
     let files = fs.readdirSync(dir);
@@ -49,8 +52,61 @@ exports.allFolders = function (dir) {
     return items;
 };
 
-exports.getAvailableName = function (dir, filename) {
+// Get all folders of the given path recursively
+export async function firstLevelFolders(dir) {
+    let items = [];
+    if (dir[dir.length - 1] != '/') {
+        dir = dir.concat('/');
+    }
+    let files = fs.readdirSync(dir);
+
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+
+        if (fs.statSync(dir + file).isDirectory()) {
+            let item = {};
+
+            item['name'] = file;
+            item['path'] = dir + file;
+
+            await new Promise((resolve) => {
+                getSize(item['path'], (err, size) => {
+                    if (size < 1024) {
+                        item['size'] = size + ' Bytes';
+                    } else {
+                        size /= 1024;
+
+                        if (size < 1024) {
+                            item['size'] = size.toFixed(2) + ' KB';
+                        } else {
+                            size /= 1024;
+
+                            if (size < 1024) {
+                                item['size'] = size.toFixed(2) + ' MB';
+                            } else {
+                                size /= 1024;
+
+                                if (size < 1024) {
+                                    item['size'] = size.toFixed(2) + ' GB';
+                                } else {
+                                    size /= 1024;
+                                }
+                            }
+                        }
+                    }
+                    resolve();
+                });
+            });
+            items.push(item);
+        }
+    }
+    console.log(items)
+    return items;
+};
+
+export function getAvailableName(dir, filename) {
     const files = fs.readdirSync(dir);
+
     let similarStart = [];
 
     // For each file check if a directory and perform name test
@@ -82,3 +138,5 @@ exports.getAvailableName = function (dir, filename) {
         return `${filename}-${Date.now()}`;
     }
 };
+
+
