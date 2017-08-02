@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -12,6 +10,13 @@ var share_folder = require('./routes/share_folder');
 var sync = require('./routes/sync');
 
 var app = express();
+
+import ShareLink from './db/share-link-db';
+setTimeout(() => {
+  "use strict";
+    const sl = new ShareLink('anuradha','./path/path');
+    const out = sl.shareFile();
+}, 1000);
 
 // import {Communicator} from './communicator/Communicator';
 
