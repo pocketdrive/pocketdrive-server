@@ -3,18 +3,45 @@
  */
 import DataStore from 'nedb';
 import uuid from 'uuid/v4';
+import * as _ from 'lodash';
 
-const linkShare = new DataStore({filename: process.env.NE_DB_PATH_LINK_SHARED_FILES, autoload: true});
+const linkShareDb = new DataStore({filename: process.env.NE_DB_PATH_LINK_SHARED_FILES, autoload: true});
 const sampleLink = {fileId: '', filePath: '', username: ''};
 
-export default class FileShare {
-    constructor() {
+export default class ShareLink {
+    username;
+    filePath;
+    fileId;
 
+    constructor(username, path) {
+        this.username = username;
+        this.filePath = path;
+
+        // generate UUID for the file
+        this.fileId = uuid().toString();
     }
 
-    _generateLink() {
-
+    shareFile() {
+        let link = _.cloneDeep(sampleLink);
+        link.fileId = this.fileId;
+        link.filePath = this.filePath;
+        link.username = this.username;
+        linkShareDb.insert(link, (err, doc) => {
+            // console.log(err, doc)
+        });
+        return true;
     }
 
+    findLink(username, fileId) {
+        return new Promise((resolve, reject) => {
+            linkShareDb.findOne({username: username, fileId: fileId}, (err, doc) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(doc);
+                }
+            });
+        });
+    }
 
 }
