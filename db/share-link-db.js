@@ -5,10 +5,11 @@ import DataStore from 'nedb';
 import uuid from 'uuid/v4';
 import * as _ from 'lodash';
 
-const linkShareDb = new DataStore({filename: process.env.NE_DB_PATH_LINK_SHARED_FILES, autoload: true});
+import * as databases from './dbs';
+
 const sampleLink = {fileId: '', filePath: '', username: ''};
 
-export default class ShareLink {
+export default class ShareLinkDbHandler {
     username;
     filePath;
     fileId;
@@ -26,7 +27,7 @@ export default class ShareLink {
         link.fileId = this.fileId;
         link.filePath = this.filePath;
         link.username = this.username;
-        linkShareDb.insert(link, (err, doc) => {
+        databases.linkShareDb.insert(link, (err, doc) => {
             // console.log(err, doc)
         });
         return true;
@@ -34,7 +35,7 @@ export default class ShareLink {
 
     findLink(username, fileId) {
         return new Promise((resolve, reject) => {
-            linkShareDb.findOne({username: username, fileId: fileId}, (err, doc) => {
+            databases.linkShareDb.findOne({username: username, fileId: fileId}, (err, doc) => {
                 if (err) {
                     reject(err);
                 } else {
