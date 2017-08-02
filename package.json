@@ -17,10 +17,13 @@
     "nedb": "^1.8.0",
     "node-cmd": "^3.0.0",
     "node-ssdp": "^3.2.1",
+    "nodemon": "^1.11.0",
     "rabin": "^1.6.0",
     "serve-favicon": "~2.4.2",
     "sha256": "^0.2.0",
     "simple-peer": "^8.1.1",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.4.2",
     "uuid": "^3.1.0",
     "wrtc": "0.0.62",
     "ws": "^3.1.0"
