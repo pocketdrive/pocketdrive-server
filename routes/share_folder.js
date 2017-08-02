@@ -1,11 +1,11 @@
-import {DBHandler} from '../utils/db_util';
+import { UserDbHandler } from '../db/user_db';
 
 const utils = require('../utils/file');
 var express = require('express');
 let exec = require('child_process').exec;
 
 var router = express.Router();
-const dbh = new DBHandler();
+const dbh = new UserDbHandler();
 
 router.post('/', function(req, res, next) {
     res.set('Content-Type', 'application/json');

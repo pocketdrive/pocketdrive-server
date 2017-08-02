@@ -1,10 +1,10 @@
-import { DBHandler } from '../utils/db_util';
+import { UserDbHandler   } from '../db/user_db';
 import express from 'express';
 import sha256 from 'sha256';
 // import sudo from 'sudo-prompt';
 
 const router = express.Router();
-const dbh = new DBHandler();
+const dbh = new UserDbHandler();
 
 router.post('/signin', function (req, res, next) {
     const userData = {
@@ -42,7 +42,6 @@ router.post('/signup', function (req, res, next) {
 
     dbh.addUser(userData).then((result) => {
         // TODO: create a new folder 
-
         res.set('Content-Type', 'application/json');
         res.send(result);
     });
