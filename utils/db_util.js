@@ -13,18 +13,27 @@ export class DBHandler {
      *      password: string
      * }
      * */
-    addUser(userObj) {
-        // find if there is a user already and abort action
+    addUser(userObj, onResult) {
+        let result = { success: false };
+
         userDb.findOne({ username: userObj.username}, function (err, doc) {
             if (doc !== null) {
-                console.warn('User already exists', doc);
+                delete doc.password; 
+                console.warn('Username already exists', doc);
+                result['error'] = 'Username already exists';
+                onResult(result);
             } else {
                 userDb.insert(userObj, function (err, newDoc) {
                     if (err) {
-                        console.error('DB ERROR', err);
+                        console.error('Database error. Adding new user failed', err);
+                        result['error'] = 'Database error. Adding new user failed';
+                    } else {
+                        result.success = true;
                     }
+
+                    onResult(result);
                 });
-            }
+            }            
         });
     }
 
@@ -111,7 +120,7 @@ export class DBHandler {
                 console.error('DB ERROR', err);
             }
             if (numRemoved === 0) {
-                console.info(`shared content owned by ${shareObj.owner} \
+                console.info(`shared content owned by ${shareObj.owner};
                 shared with ${shareObj.candidate} with path ${shareObj.path} not found`);
             }
         });
