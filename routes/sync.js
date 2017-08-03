@@ -4,7 +4,7 @@ const router = express.Router();
 import * as _ from 'lodash';
 
 import * as fileUtils from '../utils/file';
-import { SyncDbHandler } from '../db/sync_db';
+import { SyncDbHandler } from '../db/sync-db';
 
 const dbh = new SyncDbHandler();
 

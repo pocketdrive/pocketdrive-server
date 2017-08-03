@@ -13,6 +13,7 @@
     "express": "~4.15.2",
     "get-folder-size": "^1.0.0",
     "jade": "~1.11.0",
+    "jsonwebtoken": "^7.4.1",
     "lodash": "^4.17.4",
     "morgan": "~1.8.1",
     "nedb": "^1.8.0",

@@ -1,7 +1,6 @@
 /**
  * Created by anuradhawick on 6/10/17.
  */
-import DataStore from 'nedb';
 
 import * as databases from './dbs';
 
@@ -25,7 +24,7 @@ export class SyncDbHandler {
     }
 
     getSyncFolders(username) {
-        return db.findOne({username: username});
+        return databases.userDb.findOne({username: username});
     }
 
 }
