@@ -60,18 +60,19 @@ export default class PDPeer {
         // connected event
         this.peerObj.on('connect', () => {
             this.connected = true;
+            console.log('p2p connected');
         });
 
 
         this.peerObj.on('end', () => {
-            console.log('ended')
+            console.log('ended');
         });
 
         // data reception event
         this.peerObj.on('data', (data) => {
             try {
                 let obj = JSON.parse(data);
-                if (obj.type === 'pong') {
+                if (obj.type === 'ping') {
                     this.pingReceived = true;
                 }
                 // pass down the message
@@ -105,7 +106,7 @@ export default class PDPeer {
             file = file.slice(1024 * 64);
             i++;
             // For ever 100 chunks wait for ping back to ensure buffer protection
-            if (i === 100) {
+            if (i === 20) {
                 this.peerObj.send(JSON.stringify({type: 'ping'}));
                 await this._waitForPing();
                 i = 0;
@@ -159,13 +160,13 @@ export default class PDPeer {
                     this.pingReceived = false;
                     resolve(true);
                     clearInterval(int);
-                } else if (attempts === 50) {
+                } else if (attempts === 1000) {
                     resolve(false);
                     this.pingReceived = false;
                     clearInterval(int)
                 }
                 attempts++;
-            }, 10);
+            }, 1);
         });
         return status;
     }
@@ -185,6 +186,7 @@ export default class PDPeer {
             }
         } else {
             this.currentReceiveProgress = (this.dataBuffer.byteLength / this.receiveInfo.info.size) * 100;
+            console.log(this.currentReceiveProgress)
             this.dataBuffer = Buffer.concat([this.dataBuffer, data]);
         }
     }

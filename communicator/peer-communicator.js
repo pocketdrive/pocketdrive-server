@@ -2,7 +2,9 @@
  * Created by anuradhawick on 7/28/17.
  */
 import fs from 'fs';
+import * as _ from 'lodash';
 
+import ShareLinkDbHandler from '../db/share-link-db';
 import * as pm from './peer-messages';
 
 export default class PeerCommunicator {
@@ -38,12 +40,12 @@ export default class PeerCommunicator {
         const localThis = this;
 
         // Performing context binding for the callback
-        return function(messageBuffer, messageInfo) {
+        return function (messageBuffer, messageInfo) {
             if (messageInfo.type === 'json') {
                 let obj = JSON.parse(messageBuffer.toString());
                 switch (obj.type) {
                     case pm.linkShare:
-                        localThis.sendLinkedFile(obj.fileId);
+                        localThis.sendLinkedFile(obj.username, obj.fileId);
                         break;
                 }
             } else {
@@ -53,10 +55,21 @@ export default class PeerCommunicator {
 
     }
 
-    async sendLinkedFile(fileId) {
-        // TODO hard coded for the moment, needs to read a db and get the file path
-        const file = fs.readFileSync('/Users/anuradhawick/Desktop/ltu-raf.avi');
-        await this.messageToPeer(file, 'file', {fileName: 'sample file name'});
+    async sendLinkedFile(username, fileId) {
+        console.log(username, fileId)
+        const dbh = new ShareLinkDbHandler();
+        dbh.findPath(username, fileId).then(async (data) => {
+            if (_.isEmpty(data)) {
+                const data = {
+                    type: pm.error,
+                    message: 'File could not be found'
+                };
+                this.messageToPeer(new Buffer(JSON.stringify(data)), 'json', {fileName: 'sample file name'});
+            } else {
+                const file = fs.readFileSync(data.filePath);
+                this.messageToPeer(file, 'file', {fileName: 'sample file name'});
+            }
+        });
     }
 
     async messageToPeer(buffer, type, data) {
