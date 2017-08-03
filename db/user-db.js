@@ -8,9 +8,11 @@ import * as jwt from 'jsonwebtoken';
 export class UserDbHandler {
 
     /**
-     * JSON {
+     * userObj = {
      *      username: string
      *      password: string
+     *      firstname: string
+     *      lastname: string
      * }
      * */
     addUser(userObj) {
