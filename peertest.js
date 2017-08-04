@@ -24,12 +24,13 @@ async function main() {
         "use strict";
         if (p1.isConnected()) {
             p2.receiveBuffer((buffer, info) => {
-                console.log('at p2'+info)
+                console.log('at p2',info)
+                fs.writeFileSync('/Users/anuradhawick/Desktop/gotPeer.mp4',buffer)
             });
             p1.receiveBuffer((buffer, info) => {
                 console.log('at p1'+info)
             });
-            p1.sendBuffer(fs.readFileSync('/Users/anuradhawick/Desktop/ltu-raf.avi'), 'file', 'somedata');
+            p1.sendBuffer(fs.readFileSync('/Users/anuradhawick/Desktop/vid/auto drive.mp4'), 'file', 'somedata');
             clearInterval(i);
         }
     }, 1000);
