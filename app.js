@@ -11,23 +11,17 @@ var sync = require('./routes/sync');
 
 var app = express();
 
-import ShareLink from './db/share-link-db';
 
-setTimeout(() => {
-    "use strict";
-    const sl = new ShareLink('anuradha', './path/path');
-    const out = sl.shareFile();
-}, 1000);
 
-// import {Communicator} from './communicator/Communicator';
+import {Communicator} from './communicator/Communicator';
 
-// let cm = new Communicator();
-// async function main() {
-//   "use strict";
-//   // await cm.connectToCentralServer('anuradha', 'device1234');
-//   // await cm.requestOnlineDevices();
-// }
-// main()
+let cm = new Communicator();
+async function main() {
+  "use strict";
+  await cm.connectToCentralServer('anuradha', 'device1234');
+  await cm.requestOnlineDevices();
+}
+main();
 
 // import {Synchronizer} from './SyncEngine/Synchronizer';
 // import fs from 'fs';
