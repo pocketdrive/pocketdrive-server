@@ -1,5 +1,4 @@
 import * as databases from './dbs';
-import * as jwt from 'jsonwebtoken';
 
 /**
  * @author dulajra
@@ -32,20 +31,10 @@ export class UserDbHandler {
                             this.handleError(result, 'Database error. Adding new user failed', err);
                             resolve(result);
                         } else {
-                            let token = jwt.sign(doc, process.env.JWT_SECRET);
-
-                            databases.userDb.update({username: doc.username}, {$set: {token: token}}, {}, (err, numReplaced) => {
-                                if (err) {
-                                    this.handleError(result, 'Saving token failed', err);
-                                    databases.userDb.remove({username: doc.username}, {}, (err, numRemoved) => {
-                                        resolve(result);
-                                    })
-                                } else {
-                                    result.success = true;
-                                    resolve(result);
-                                }
-                            })
+                            result.success = true;
                         }
+
+                        resolve(result);
                     });
                 }
 
