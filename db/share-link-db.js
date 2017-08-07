@@ -1,5 +1,5 @@
 /**
- * Created by anuradhawick on 8/2/17.
+ * @author anuradhawick
  */
 import uuid from 'uuid/v4';
 import * as _ from 'lodash';

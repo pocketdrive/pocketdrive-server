@@ -1,16 +1,16 @@
-/**
- * Created by anuradhawick on 6/10/17.
- */
-
 import * as databases from './dbs';
-import * as jwt from 'jsonwebtoken';
 
+/**
+ * @author dulajra
+ */
 export class UserDbHandler {
 
     /**
-     * JSON {
+     * userObj = {
      *      username: string
      *      password: string
+     *      firstname: string
+     *      lastname: string
      * }
      * */
     addUser(userObj) {
@@ -23,7 +23,7 @@ export class UserDbHandler {
                     resolve(result);
                 } else if (doc !== null) {
                     delete doc.password;
-                    this.handleError(result, 'Username already exists', null);
+                    this.handleError(result, 'Username already exists');
                     resolve(result);
                 } else {
                     databases.userDb.insert(userObj, (err, doc) => {
@@ -31,20 +31,10 @@ export class UserDbHandler {
                             this.handleError(result, 'Database error. Adding new user failed', err);
                             resolve(result);
                         } else {
-                            let token = jwt.sign(doc, process.env.JWT_SECRET);
-
-                            databases.userDb.update({username: doc.username}, { $set: { token: token }}, {}, (err, numReplaced) => {
-                                if (err) {
-                                    this.handleError(result, 'Saving token failed', err);
-                                    databases.userDb.remove({username: doc.username}, {}, (err, numRemoved) => {
-                                        resolve(result);
-                                    })
-                                } else {
-                                    result.success = true;
-                                    resolve(result);
-                                }
-                            })
+                            result.success = true;
                         }
+
+                        resolve(result);
                     });
                 }
 
@@ -76,89 +66,12 @@ export class UserDbHandler {
         });
     }
 
-    /**
-     * Remove user given the username
-     * */
-    removeUser(username) {
-        databases.userDb.remove({username: username}, {}, function (err, numRemoved) {
-            if (err) {
-                console.error('DB ERROR', err);
-            }
-            if (numRemoved === 0) {
-                console.info(`user ${username} not found`);
-            }
-        });
-    }
-
-    /**
-     * JSON {
-     *      username: string
-     *      password: string
-     * }
-     * */
-    updateUser(userObj) {
-        databases.userDb.update({username: userObj.username}, {password: userObj.password}, function (err, numReplaced) {
-            if (err) {
-                console.error('DB ERROR', err);
-            }
-            if (numReplaced === 0) {
-                console.info(`Could not find any matching document for username ${userObj.username}`);
-            }
-        })
-    }
-
-    /**
-     * JSON {
-     *      owner: owner of the folder
-     *      candidate: with whom the content is shared
-     *      src_path: file path of the source
-     *      dest_path: file path of the destination
-     *      permission: access level (r, w)
-     * }
-     * */
-    shareFolder(shareObj) {
-        accessDb.insert(shareObj, function (err, newDoc) {
-            if (err) {
-                console.error('DB ERROR', err);
-            }
-        });
-    }
-
-    /**
-     * Get the cursor for shared content given the owner name
-     * */
-    getSharedContent(username) {
-        return accessDb.find({owner: username});
-    }
-
-    /**
-     * Get the cursor for shared content given the candidate name
-     * */
-    getSharedWithMeContent(candidate) {
-        return accessDb.find({candidate: candidate});
-    }
-
-    /**
-     * JSON {
-     *      owner: owner of the folder.file
-     *      candidate: with whom the content is shared
-     *      path: file path
-     * }
-     * */
-    revokeAccess(shareObj) {
-        accessDb.remove(shareObj, function (err, numRemoved) {
-            if (err) {
-                console.error('DB ERROR', err);
-            }
-            if (numRemoved === 0) {
-                console.info(`shared content owned by ${shareObj.owner};
-                shared with ${shareObj.candidate} with path ${shareObj.path} not found`);
-            }
-        });
-    }
-
     handleError(result, msg, err) {
-        console.error(msg, err);
+        if (arguments.length === 2) {
+            console.error(msg);
+        } else {
+            console.error(msg);
+        }
         result.error = msg;
     }
 
