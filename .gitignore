@@ -56,10 +56,9 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# custom ignores
 ./.env
 ./.idea/
 *.iml
 ./package-lock.json
-
-.vscode
+./.vscode/
