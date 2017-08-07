@@ -52,7 +52,9 @@ export function allFolders(dir) {
     return items;
 }
 
-// Get all folders of the given path recursively
+/**
+ * Get all first level folders of the given path
+ */
 export async function firstLevelFolders(dir) {
     if (dir[dir.length - 1] !== '/') {
         dir = dir.concat('/');
