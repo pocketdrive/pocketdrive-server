@@ -31,7 +31,12 @@ export class SyncDbHandler {
                     this.handleError(result, 'Database error. Cannot read sync folders', err);
                 } else {
                     result.success = true;
-                    result.data = doc.syncFolders;
+
+                    if(doc){
+                        result.data = doc.syncFolders;
+                    } else{
+                        result.data = {}
+                    }
                 }
 
                 resolve(result);
