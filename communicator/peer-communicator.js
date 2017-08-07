@@ -2,6 +2,7 @@
  * Created by anuradhawick on 7/28/17.
  */
 import fs from 'fs';
+import path from 'path';
 import * as _ from 'lodash';
 
 import ShareLinkDbHandler from '../db/share-link-db';
@@ -60,14 +61,19 @@ export default class PeerCommunicator {
         const dbh = new ShareLinkDbHandler();
         dbh.findPath(username, fileId).then(async (data) => {
             if (_.isEmpty(data)) {
-                const data = {
-                    type: pm.error,
-                    message: 'File could not be found'
-                };
-                this.messageToPeer(new Buffer(JSON.stringify(data)), 'json', {fileName: 'sample file name'});
+                let msg = _.cloneDeep(pm.peerMessageError);
+
+                msg.error = 'File could not be found';
+                msg.message = 'Please check the link or contact file owner';
+                this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
             } else {
                 const file = fs.readFileSync(data.filePath);
-                this.messageToPeer(file, 'file', {fileName: 'sample file name'});
+                const fileName = path.basename(data.filePath);
+
+                let msg = _.cloneDeep(pm.linkShareData);
+
+                msg.fileName = fileName;
+                this.messageToPeer(file, pm.type.file, msg);
             }
         });
     }
