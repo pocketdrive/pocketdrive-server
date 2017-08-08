@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 
 import MetadataDBHandler from '../db/file-metadata-db';
+import * as fileMeta from '../utils/meta-data';
 
 const metaDB = new MetadataDBHandler();
 const inotify = new Inotify();
@@ -50,21 +51,21 @@ export default class FileSystemEventListener {
         let fullpath = path.normalize(this.hashtable[event.watch] + "/" + event.name);
         if (mask & Inotify.IN_MODIFY) {
             if (!isTempFile) {
-                metaDB.updateMetadata(fullpath, getFileMetadata(fullpath));
+                metaDB.updateMetadata(fullpath, fileMeta.getFileMetadata(fullpath));
                 console.log("File modified: " + fullpath);
             }
         } else if (mask & Inotify.IN_CREATE) {
             if (isDirectory) {
                 console.log("Directory for watch: " + fullpath);
-                add_Watch(fullpath);
+                this.addWatch(fullpath);
             }
             else if (!isTempFile) {
-                metaDB.insertMetadata(getFileMetadata(fullpath));
+                metaDB.insertMetadata(fileMeta.getFileMetadata(fullpath));
                 console.log("New file created: " + fullpath);
             }
         } else if (mask & Inotify.IN_DELETE) {
             if (isDirectory) {
-                deleteHashtable(fullpath);
+                this.deleteHashtable(fullpath);
                 console.log("Directory Deleted: " + fullpath);
             }
             else if (!isTempFile) {
@@ -82,7 +83,7 @@ export default class FileSystemEventListener {
             if (Object.keys(this.data).length &&
                 this.data.cookie === event.cookie) {
                 if (isDirectory) {
-                    this.add_Watch(fullpath);
+                    this.addWatch(fullpath);
                     metaDB.updateMetadataForRenaming(this.data.path, fullpath, isDirectory);
                     console.log("Directory Renamed:");
                     console.log("   Old path:" + this.data.path);

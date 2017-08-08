@@ -53,7 +53,7 @@ export default class MetadataDBHandler {
     }
 
     deleteMetadata(path) {
-        let regex = "/^" + path + "/"
+        let regex = "/^" + path + "/";
         databases.fileMetaDataDb.remove({path: path}, function (err, numDeleted) {
             if (err)
                 console.log(err);
