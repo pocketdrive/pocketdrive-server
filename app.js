@@ -8,19 +8,22 @@ var users = require('./routes/users');
 var folder_listing = require('./routes/folder_listing');
 var share_folder = require('./routes/share_folder');
 var sync = require('./routes/sync');
+var ssdp = require('./utils/ssdp');
 
 var app = express();
 
+// import {Communicator} from './communicator/Communicator';
 
+// let cm = new Communicator();
 
-import {Communicator} from './communicator/Communicator';
-
-let cm = new Communicator();
 async function main() {
-  "use strict";
-  await cm.connectToCentralServer('anuradha', 'device1234');
-  await cm.requestOnlineDevices();
+    // "use strict";
+    // await cm.connectToCentralServer('anuradha', 'device1234');
+    // await cm.requestOnlineDevices();
+
+    ssdp.broadcast();
 }
+
 main();
 
 // import {Synchronizer} from './SyncEngine/Synchronizer';

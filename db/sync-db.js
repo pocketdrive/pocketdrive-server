@@ -14,7 +14,6 @@ export class SyncDbHandler {
                     console.error('Database error. Adding new user failed', err);
                     result['error'] = 'Database error. Adding new user failed';
                 } else {
-                    console.log(numReplaced);
                     result.success = true;
                 }
                 resolve(result);
