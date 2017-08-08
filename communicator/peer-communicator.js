@@ -57,8 +57,8 @@ export default class PeerCommunicator {
     }
 
     async sendLinkedFile(username, fileId) {
-        console.log(username, fileId)
         const dbh = new ShareLinkDbHandler();
+
         dbh.findPath(username, fileId).then(async (data) => {
             if (_.isEmpty(data)) {
                 let msg = _.cloneDeep(pm.peerMessageError);
@@ -97,5 +97,6 @@ export default class PeerCommunicator {
  * }
  *
  * link request object format
- * { type: "linkShare", fileId: "asd7asd8fas23asd423sdd" }
+ * { type: "linkShare", fileId: "asd7asd8fas23asd423sdd", username: "asdadsdad" }
+ * Device ID not needed since P2P connection
  * */

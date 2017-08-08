@@ -18,7 +18,7 @@ export default class FileSystemEventListener {
     }
 
     freshStart() {
-        this.add_Watch(this.baseDirectory);
+        this.addWatch(this.baseDirectory);
         let directory_child = this.scandirSync(this.baseDirectory);
         if (directory_child.length !== 0)
             for (let i = 0, len = directory_child.length; i < len; i++)
