@@ -33,18 +33,19 @@ export function allFilesFolders(dir) {
 
 // Get all folders of the given path recursively
 export function allFolders(dir) {
-    var items = [];
-    if (dir[dir.length - 1] !== '/') dir = dir.concat('/')
+    let items = [];
+    let item;
+    if (dir[dir.length - 1] !== '/') dir = dir.concat('/');
     let files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
         if (fs.statSync(dir + file).isDirectory()) {
-            var item = {};
-            item['type'] = 'dir';
+            item = {};
             item['name'] = file;
             item['path'] = dir + file
-            item['permission'] = 'w';       //TODO: this value should be read from db
             item['owner'] = 'me';      //TODO: this value should be read from db
+            item['users'] = 'me';      //TODO: this value should be read from db
+            item['permission'] = 'w';       //TODO: this value should be read from db
             item['children'] = (exports.allFolders(dir + file + '/'));
             items.push(item);
         }
