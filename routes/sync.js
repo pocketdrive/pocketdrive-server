@@ -12,6 +12,8 @@ const dbh = new SyncDbHandler();
 router.post('/list', CommonUtils.authorize, function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
+    console.log(req.username);
+
     let folderPath = process.env.PD_FOLDER_PATH + req.username;
 
     fileUtils.firstLevelFolders(folderPath)
