@@ -57,7 +57,7 @@ typings/
 .yarn-integrity
 
 # custom ignores
-./.env
+.env
 .idea/
 *.iml
 package-lock.json
