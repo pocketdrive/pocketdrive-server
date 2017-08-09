@@ -58,7 +58,7 @@ typings/
 
 # custom ignores
 ./.env
-./.idea/
+.idea/
 *.iml
-./package-lock.json
-./.vscode/
+package-lock.json
+.vscode/
