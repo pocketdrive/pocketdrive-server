@@ -6,8 +6,6 @@ import * as jwt from 'jsonwebtoken';
 export class CommonUtils {
 
     static authorize(req, res, next) {
-        console.log(req.headers);
-
         let bearerToken;
         let bearerHeader = req.headers["authorization"];
         if (typeof bearerHeader !== 'undefined') {
@@ -21,11 +19,11 @@ export class CommonUtils {
                     req.username = token.username;
                     next();
                 } catch (err) {
-                    res.sendStatus(403);
+                    res.sendStatus(401);
                 }
 
             } else {
-                res.sendStatus(403);
+                res.sendStatus(401);
             }
 
         } else {
