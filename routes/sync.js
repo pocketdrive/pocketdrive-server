@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-import * as _ from 'lodash';
-
 import * as fileUtils from '../utils/file';
 import {SyncDbHandler} from '../db/sync-db';
 import {CommonUtils} from '../utils/common';
@@ -11,8 +9,6 @@ const dbh = new SyncDbHandler();
 
 router.post('/list', CommonUtils.authorize, function (req, res, next) {
     res.set('Content-Type', 'application/json');
-
-    console.log(req.username);
 
     let folderPath = process.env.PD_FOLDER_PATH + req.username;
 
