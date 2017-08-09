@@ -46,8 +46,5 @@ export function isFileUpdated(filePath) {
 
 export function hasFile(username, filePath) {
     // TODO : construct the filepath using username and env file
-    if(fs.existsSync(filePath)){
-        return true;
-    }
-    return false;
+    return !!fs.existsSync(filePath);
 }

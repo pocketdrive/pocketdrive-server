@@ -1,10 +1,10 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 
 import * as fileUtils from '../utils/file';
-import {SyncDbHandler} from '../db/sync-db';
+import SyncDbHandler from '../db/sync-db';
 import {CommonUtils} from '../utils/common';
 
+const router = express.Router();
 const dbh = new SyncDbHandler();
 
 router.post('/list', CommonUtils.authorize, function (req, res, next) {
@@ -37,7 +37,7 @@ router.post('/list', CommonUtils.authorize, function (req, res, next) {
 
 router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
-
+    // TODO Use sync-flow registerFiles method here for each folder
     dbh.setSyncFolders(req.username, data.syncFolders).then((result) => {
         res.set('Content-Type', 'application/json');
         res.send(result);

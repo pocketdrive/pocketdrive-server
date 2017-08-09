@@ -3,7 +3,7 @@
  */
 import * as databases from './dbs';
 
-export class SyncDbHandler {
+export default class SyncDbHandler {
 
     setSyncFolders(username, folderNames) {
         let result = {success: false};
@@ -39,6 +39,23 @@ export class SyncDbHandler {
                 }
 
                 resolve(result);
+            });
+        });
+    }
+
+    getAllSyncingUsers() {
+        let result = {success: false};
+
+        return new Promise((resolve) => {
+            databases.syncDb.find({},(err, doc) => {
+                if (err) {
+                    this.handleError(result, 'Database error. Find users failed', err);
+                    resolve(result);
+                } else if (doc !== null) {
+                    result.success = true;
+                    result.data = doc;
+                    resolve(result);
+                }
             });
         });
     }

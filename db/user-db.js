@@ -3,7 +3,7 @@ import * as databases from './dbs';
 /**
  * @author dulajra
  */
-export class UserDbHandler {
+export default class UserDbHandler {
 
     /**
      * userObj = {
@@ -66,6 +66,23 @@ export class UserDbHandler {
         });
     }
 
+    getAllUsers() {
+        let result = {success: false};
+
+        return new Promise((resolve) => {
+            databases.userDb.find({},(err, doc) => {
+                if (err) {
+                    this.handleError(result, 'Database error. Find users failed', err);
+                    resolve(result);
+                } else if (doc !== null) {
+                    result.success = true;
+                    result.data = doc;
+                    resolve(result);
+                }
+            });
+        });
+    }
+
     handleError(result, msg, err) {
         if (arguments.length === 2) {
             console.error(msg);
@@ -74,5 +91,4 @@ export class UserDbHandler {
         }
         result.error = msg;
     }
-
 }

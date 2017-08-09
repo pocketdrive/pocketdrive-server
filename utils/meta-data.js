@@ -4,9 +4,11 @@
 import fs  from 'fs';
 import path from 'path';
 import md5File from 'md5-file';
+import * as _ from 'lodash';
 
 export function getFileList(directory) {
-    let files = fs.readdirSync(directory);
+    const files = fs.readdirSync(directory);
+
     let fileList = [];
     
     for (let i in files) {
@@ -23,14 +25,17 @@ export function getFileList(directory) {
             fileList.push(name);
         }
     }
+
     return fileList;
 }
 
 export function getFileMetadata(path) {
     const stat = fs.statSync(path);
     const hash = md5File.sync(path);
+    const tempPath = _.replace(path, process.env.PD_FOLDER_PATH, '');
+
     return {
-        path: path,
+        path: tempPath,
         owner: stat["uid"],
         share_with: "all",
         size: stat["size"],

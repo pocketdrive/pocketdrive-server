@@ -1,7 +1,8 @@
-import {UserDbHandler} from '../db/user-db';
 import express from 'express';
 import sha256 from 'sha256';
 import * as jwt from 'jsonwebtoken';
+
+import UserDbHandler from '../db/user-db';
 // import sudo from 'sudo-prompt';
 
 const router = express.Router();
