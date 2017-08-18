@@ -5,7 +5,7 @@ import * as _ from 'lodash';
 // Get all files and folders of the given path recursively
 export function allFilesFolders(dir) {
     var items = [];
-    if (dir[dir.length - 1] != '/') dir = dir.concat('/')
+    if (dir[dir.length - 1] !== '/') dir = dir.concat('/')
     files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
@@ -33,34 +33,40 @@ export function allFilesFolders(dir) {
 
 // Get all folders of the given path recursively
 export function allFolders(dir) {
-    var items = [];
-    if (dir[dir.length - 1] != '/') dir = dir.concat('/')
+    let items = [];
+    let item;
+    if (dir[dir.length - 1] !== '/') dir = dir.concat('/');
     let files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
         if (fs.statSync(dir + file).isDirectory()) {
-            var item = {};
-            item['type'] = 'dir';
+            item = {};
             item['name'] = file;
             item['path'] = dir + file
-            item['permission'] = 'w';       //TODO: this value should be read from db
             item['owner'] = 'me';      //TODO: this value should be read from db
+            item['users'] = 'me';      //TODO: this value should be read from db
+            item['permission'] = 'w';       //TODO: this value should be read from db
             item['children'] = (exports.allFolders(dir + file + '/'));
             items.push(item);
         }
     });
     return items;
-};
+}
 
-// Get all folders of the given path recursively
+/**
+ * Get all first level folders of the given path
+ */
 export async function firstLevelFolders(dir) {
-    let items = [];
-    if (dir[dir.length - 1] != '/') {
+    if (dir[dir.length - 1] !== '/') {
         dir = dir.concat('/');
     }
+
+    let items = [];
     let files = fs.readdirSync(dir);
 
-    _.each(files, async (file) => {
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+
         if (fs.statSync(dir + file).isDirectory()) {
             let item = {};
 
@@ -83,24 +89,21 @@ export async function firstLevelFolders(dir) {
                                 item['size'] = size.toFixed(2) + ' MB';
                             } else {
                                 size /= 1024;
-
-                                if (size < 1024) {
-                                    item['size'] = size.toFixed(2) + ' GB';
-                                } else {
-                                    size /= 1024;
-                                }
+                                item['size'] = size.toFixed(2) + ' GB';
                             }
                         }
                     }
+
                     resolve();
                 });
             });
+
             items.push(item);
         }
-    });
-    
+    }
+
     return items;
-};
+}
 
 export function getAvailableName(dir, filename) {
     const files = fs.readdirSync(dir);

@@ -1,7 +1,6 @@
 /**
- * Created by anuradhawick on 8/2/17.
+ * @author anuradhawick
  */
-import DataStore from 'nedb';
 import uuid from 'uuid/v4';
 import * as _ from 'lodash';
 

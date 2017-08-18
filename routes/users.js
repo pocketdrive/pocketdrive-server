@@ -1,6 +1,8 @@
-import {UserDbHandler} from '../db/user-db';
 import express from 'express';
 import sha256 from 'sha256';
+import * as jwt from 'jsonwebtoken';
+
+import UserDbHandler from '../db/user-db';
 // import sudo from 'sudo-prompt';
 
 const router = express.Router();
@@ -21,6 +23,14 @@ router.post('/signin', function (req, res) {
                 smbPassword: process.env.SMBPASSWD,
                 path: process.env.PD_FOLDER_PATH + userData.username
             };
+
+            result.token = jwt.sign(
+                {
+                    username: result.data.user.username
+                },
+                process.env.JWT_SECRET,
+                {expiresIn: 3600 * 24 * 7}
+            );
             res.send(result);
         }
     });

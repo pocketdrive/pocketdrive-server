@@ -63,6 +63,7 @@ export class Synchronizer {
     }
 
     async updateOldFile(transmissionData, filePath) {
+        // TODO must be implemented as a C++ wrapper for performance
         let out = new Buffer(0);
         let existing_file = fs.readFileSync(`${filePath}`);
         let old_data = transmissionData.oldData;
