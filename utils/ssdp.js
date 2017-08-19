@@ -1,3 +1,6 @@
+/**
+ * @author Dulaj Atapattu
+ */
 exports.broadcast = function () {
     let SSDP = require('node-ssdp').Server
         , server = new SSDP({
