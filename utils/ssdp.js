@@ -16,4 +16,4 @@ exports.broadcast = function () {
     process.on('exit', function () {
         server.stop()
     })
-};
+}

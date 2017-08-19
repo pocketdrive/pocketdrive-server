@@ -1,14 +1,15 @@
-/**
- * Created by pamoda on 8/7/17.
- */
 import md5File from 'md5-file';
 import fs from 'fs';
 import path from 'path';
 import * as _ from 'lodash';
 
 import * as databases from './dbs';
-import * as metaUtil from '../utils/meta-data';
+import * as metaUtils from '../utils/meta-data';
 
+/**
+ * @author Pamoda Wimalasiri
+ * @author Dulaj Atapattu
+ */
 export default class MetadataDBHandler {
 
     insertMetadata(entry) {
@@ -23,10 +24,10 @@ export default class MetadataDBHandler {
         });
     }
 
-    updateMetadata(path, entry) {
+    /*updateMetadata(path, entry) {
         const tempPath = _.replace(path, process.env.PD_FOLDER_PATH, '');
 
-        databases.fileMetaDataDb.findOne({path: tempPath}, (err, result) => {
+        /!*databases.fileMetaDataDb.findOne({path: tempPath}, (err, result) => {
             if (!err) {
                 console.log('File found: ', JSON.stringify(result));
                 entry.previous_cs = result ? result.new_cs : entry.new_cs;
@@ -35,6 +36,22 @@ export default class MetadataDBHandler {
                         console.log(numReplaced + " entries updated");
                     }
                 });
+            }
+        });*!/
+
+        databases.fileMetaDataDb.update({path: tempPath}, {$set: entry}, {}, (err, numReplaced) => {
+            if (!err) {
+                console.log(numReplaced + " entries updated");
+            }
+        });
+    }*/
+
+    updateCurrentCheckSum(fullPath, checkSum) {
+        const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
+
+        databases.fileMetaDataDb.update({path: path}, {$set: {current_cs: checkSum}}, {}, (err, numReplaced) => {
+            if (!err) {
+                console.log(numReplaced + " entries updated");
             }
         });
     }
@@ -59,7 +76,8 @@ export default class MetadataDBHandler {
             });
         }
         else {
-            databases.fileMetaDataDb.update({path: oldpath}, {$set: {path: newPath}}, {}, (err, numReplaced) => {
+            console.log('search key ', oldPath);
+            databases.fileMetaDataDb.update({path: tempOldPath}, {$set: {path: tempNewPath}}, {}, (err, numReplaced) => {
                 if (!err) {
                     console.log(numReplaced + " entries updated");
                 }
@@ -92,28 +110,16 @@ export default class MetadataDBHandler {
 
     addFilesToSync(username, syncPath) {
         const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
-        const fileList = metaUtil.getFileList(directory);
+        const fileList = metaUtils.getFileList(directory);
 
         _.each(fileList, (file) => {
-            const stat = fs.statSync(file);
-            const hash = md5File.sync(file);
-            const meta_info = {
-                path: _.replace(file, process.env.PD_FOLDER_PATH, ''),
-                owner: stat["uid"],
-                share_with: "all",
-                size: stat["size"],
-                last_modified: stat["mtime"],
-                previous_cs: hash,
-                new_cs: hash
-            };
-
-            databases.fileMetaDataDb.insert(meta_info);
+            databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, file));
         });
     }
 
     removeFilesFromSync(username, syncPath) {
         const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
-        const fileList = metaUtil.getFileList(directory);
+        const fileList = metaUtils.getFileList(directory);
 
         let tempPath;
 

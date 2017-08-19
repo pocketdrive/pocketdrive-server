@@ -62,10 +62,10 @@ export class Synchronizer {
         return {oldData: old_data, newData: new_data};
     }
 
-    async updateOldFile(transmissionData, filePath) {
+    async updateOldFile(transmissionData, oldFilePath) {
         // TODO must be implemented as a C++ wrapper for performance
         let out = new Buffer(0);
-        let existing_file = fs.readFileSync(`${filePath}`);
+        let existing_file = fs.readFileSync(`${oldFilePath}`);
         let old_data = transmissionData.oldData;
         let new_data = transmissionData.newData;
 
@@ -91,6 +91,6 @@ export class Synchronizer {
             }
         }
         console.log(out.byteLength, existing_file.byteLength);
-        fs.writeFileSync(`${filePath}`, out)
+        fs.writeFileSync(`${oldFilePath}`, out)
     }
 }
