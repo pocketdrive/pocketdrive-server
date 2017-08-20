@@ -18,7 +18,7 @@ export default class MetadataDBHandler {
      * @param username - Username of the folder owner
      * @param syncPath - Relative path of the folder to sync
      */
-    addFilesToSync(username, syncPath) {
+    addNewFolder(username, syncPath) {
         const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
         const fileList = metaUtils.getFileList(directory);
 
@@ -33,8 +33,7 @@ export default class MetadataDBHandler {
      * @param username - Username of the file owner
      * @param fullPath - Absolute path to the file
      */
-    insertMetadata(username, fullPath) {
-        entry.previous_cs = entry.new_cs;
+    addNewFile(username, fullPath) {
         databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, fullPath), (err, doc) => {
             if (err) {
                 console.log("could not insert : " + err);
@@ -97,8 +96,13 @@ export default class MetadataDBHandler {
         }
     }
 
-    deleteMetadata(path) {
-        const tempPath = _.replace(path, process.env.PD_FOLDER_PATH, '');
+    /**
+     * Delete single file from meta data DB.
+     *
+     * @param fullPath - Absolute path of the file
+     */
+    deleteFile(fullPath) {
+        const tempPath = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         databases.fileMetaDataDb.remove({path: tempPath}, (err, numDeleted) => {
             if (err) {
