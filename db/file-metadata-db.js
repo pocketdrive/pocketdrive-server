@@ -34,12 +34,13 @@ export default class MetadataDBHandler {
      * @param fullPath - Absolute path to the file
      */
     addNewFile(username, fullPath) {
-        databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, fullPath), (err, doc) => {
+        const entry = metaUtils.getFileMetadata(username, fullPath);
+        databases.fileMetaDataDb.update({path: entry.path}, entry, {upsert: true}, (err, doc) => {
             if (err) {
                 console.log("could not insert : " + err);
             }
             else {
-                console.log('Inserted : ', doc.path, 'with ID', doc._id);
+                console.log('Inserted');
             }
         });
     }
@@ -88,7 +89,13 @@ export default class MetadataDBHandler {
                 _.each(docs, (doc) => {
                     const path = (doc.path).replace(regex, tempNewPath);
 
-                    databases.fileMetaDataDb.update({path: doc.path}, {$set: {path: path}}, {}, (err, numReplaced) => {
+                    databases.fileMetaDataDb.update({path: doc.path}, {
+                        $set: {
+                            action: 'RENAME',
+                            path: path,
+                            oldPath: doc.path
+                        }
+                    }, {}, (err, numReplaced) => {
                         if (!err) {
                             console.log(numReplaced + " entries updated");
                         }
@@ -98,7 +105,13 @@ export default class MetadataDBHandler {
         }
         else {
             console.log('search key ', oldPath);
-            databases.fileMetaDataDb.update({path: tempOldPath}, {$set: {path: tempNewPath}}, {}, (err, numReplaced) => {
+            databases.fileMetaDataDb.update({path: tempOldPath}, {
+                $set: {
+                    action: 'RENAME',
+                    path: tempNewPath,
+                    oldPath: tempOldPath
+                }
+            }, {}, (err, numReplaced) => {
                 if (!err) {
                     console.log(numReplaced + " entries updated");
                 }

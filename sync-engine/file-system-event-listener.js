@@ -86,18 +86,17 @@ export default class FileSystemEventListener {
                 console.log('File modified: ' + fullPath);
             }
         } else if (mask & Inotify.IN_CREATE) {
+            // TODO: Works only with terminal
             if (isDirectory) {
                 console.log('Directory for watch: ' + fullPath);
                 this.addWatch(fullPath);
             }
             else if (!isTempFile) {
-                metaDB.updateEntry(fullPath, {
-                    action: Actions.NEW
-                });
-                // metaDB.addNewFile(this.username, fullPath);
+                metaDB.addNewFile(this.username, fullPath);
                 console.log('New file created: ' + fullPath);
             }
         } else if (mask & Inotify.IN_DELETE) {
+            // TODO: Only shift delete works
             if (isDirectory) {
                 this.deleteHashtable(fullPath);
                 console.log('Directory Deleted: ' + fullPath);
@@ -132,18 +131,20 @@ export default class FileSystemEventListener {
                 }
                 else {
                     if (this.data.temp) {
-                        // TODO: Identify and handle this event later
-                        throw 'This event is not handled yet';
+                        metaDB.updateEntry(fullPath, {
+                            action: Actions.MODIFY,
+                            current_cs: metaUtils.getCheckSum(fullPath),
+                        });
                         // metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
-                        console.log('File modified :' + fullPath);
+                        console.log('File modified:' + fullPath);
                     }
                     else {
-                        // metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
-                        metaDB.updateEntry(fullPath, {
-                            action: Actions.RENAME,
-                            oldPath: this.data.path,
-                            path: fullPath
-                        });
+                        metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
+                        // metaDB.updateEntry(fullPath, {
+                        //     action: Actions.RENAME,
+                        //     oldPath: this.data.path,
+                        //     path: fullPath
+                        // });
                         console.log('File renamed');
                         console.log('   Old path:' + this.data.path);
                         console.log('   New path:' + fullPath);
