@@ -50,7 +50,7 @@ export class SyncRunner {
     }
 
     onAddNewSyncDirectory(username, folderName) {
-        this.metaDbHandler.addNewFolder(username, folderName);
+        // this.metaDbHandler.addNewFolder(username, folderName);
         this.eventListeners.push(new FileSystemEventListener(username, folderName).start());
     }
 }

@@ -48,7 +48,7 @@ export default class MetadataDBHandler {
     updateEntry(fullPath, updateEntry) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
-        databases.fileMetaDataDb.update({path: path}, {$set: updateEntry}, {}, (err, numReplaced) => {
+        databases.fileMetaDataDb.update({path: path}, updateEntry, {upsert: true}, (err, numReplaced) => {
             if (!err) {
                 console.log(numReplaced + " entries updated");
             }
@@ -95,7 +95,7 @@ export default class MetadataDBHandler {
                             path: path,
                             oldPath: doc.path
                         }
-                    }, {}, (err, numReplaced) => {
+                    }, {upsert: true}, (err, numReplaced) => {
                         if (!err) {
                             console.log(numReplaced + " entries updated");
                         }
@@ -111,12 +111,31 @@ export default class MetadataDBHandler {
                     path: tempNewPath,
                     oldPath: tempOldPath
                 }
-            }, {}, (err, numReplaced) => {
+            }, {upsert: true}, (err, numReplaced) => {
                 if (!err) {
                     console.log(numReplaced + " entries updated");
                 }
             });
         }
+    }
+
+    removeFilesOfDeletedDirectory(fullPath) {
+        const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
+
+        let regex = new RegExp(path);
+
+        databases.fileMetaDataDb.find({path: {$regex: regex}}, (err, docs) => {
+            _.each(docs, (doc) => {
+                databases.fileMetaDataDb.remove(doc, (err, numDeleted) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    else {
+                        console.log('Deleted', numDeleted, 'files');
+                    }
+                });
+            });
+        });
     }
 
     /**

@@ -12,6 +12,7 @@ const metaDB = new MetadataDBHandler();
 const inotify = new Inotify();
 const Actions = {NEW: 'NEW', MODIFY: 'MODIFY', DELETE: 'DELETE', RENAME: 'RENAME', MOVE: 'MOVE'};
 
+// TODO: Clean and refactor this class @dulaj
 /**
  * @author Pamoda Wimalasiri
  */
@@ -26,15 +27,14 @@ export default class FileSystemEventListener {
         p(this.baseDirectory);
         this.hashtable = {};
         this.data = {};
-        this.watchIDs = [];
     }
 
     start() {
-        this.watchIDs.push(this.addWatch(this.baseDirectory));
+        this.addWatch(this.baseDirectory);
         let directory_child = this.scandirSync(this.baseDirectory);
         if (directory_child.length !== 0) {
             for (let i = 0, len = directory_child.length; i < len; i++) {
-                this.watchIDs.push(this.addWatch(directory_child[i]));
+                this.addWatch(directory_child[i]);
             }
         }
 
@@ -42,9 +42,7 @@ export default class FileSystemEventListener {
     }
 
     stop() {
-        _.each(this.watchIDs, (watchId) => {
-            inotify.clearWatch(watchId)
-        })
+       // TODO: with hash table
     }
 
     addWatch(directory) {
@@ -54,11 +52,10 @@ export default class FileSystemEventListener {
             watch_for: Inotify.IN_ALL_EVENTS,
             callback: this.inotifyCallback.bind(this)
         };
-        const watch_fd = inotify.addWatch(watch);
 
-        this.hashtable[watch_fd] = directory;
+        const watch_id = inotify.addWatch(watch);
+        this.hashtable[watch_id] = directory;
 
-        return watch_fd;
     }
 
     inotifyCallback(event) {
@@ -72,43 +69,59 @@ export default class FileSystemEventListener {
             isTempFile = ((event.name).startsWith('.'));
         }
 
-        type = isDirectory ? 'directory ' : 'file ';
-        event.name ? type += ' ' + event.name + ' ' : ' ';
+        type = isDirectory ? 'dir' : 'file';
+        // event.name ? type += ' ' + event.name + ' ' : ' ';
         fullPath = path.resolve(this.hashtable[event.watch], _.get(event, 'name', ''));
 
         if (mask & Inotify.IN_MODIFY) {
             if (!isTempFile) {
                 metaDB.updateEntry(fullPath, {
                     action: Actions.MODIFY,
-                    current_cs: metaUtils.getCheckSum(fullPath),
+                    user: this.username,
+                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                    type: type,
+                    current_cs: metaUtils.getCheckSum(fullPath)
                 });
-                // metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
-                console.log('File modified: ' + fullPath);
+
+                console.log(type + ' modified: ' + fullPath);
             }
+
         } else if (mask & Inotify.IN_CREATE) {
-            // TODO: Works only with terminal
             if (isDirectory) {
-                console.log('Directory for watch: ' + fullPath);
+                console.log('New directory for watch: ' + fullPath);
                 this.addWatch(fullPath);
             }
-            else if (!isTempFile) {
-                metaDB.addNewFile(this.username, fullPath);
-                console.log('New file created: ' + fullPath);
+
+            if (!isTempFile) {
+                metaDB.updateEntry(fullPath, {
+                    action: Actions.NEW,
+                    user: this.username,
+                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                    type: type
+                });
+
+                console.log('New ' + type + ' created: ' + fullPath);
             }
+
         } else if (mask & Inotify.IN_DELETE) {
             // TODO: Only shift delete works
             if (isDirectory) {
-                this.deleteHashtable(fullPath);
-                console.log('Directory Deleted: ' + fullPath);
+                this.deleteFromHashTableByDirectory(fullPath);
+                metaDB.removeFilesOfDeletedDirectory(fullPath);
+                console.log('Directory removed from watch: ' + fullPath);
             }
-            else if (!isTempFile) {
-                console.log('File Deleted: ' + fullPath);
-                // metaDB.deleteFile(fullPath);
+
+            if (!isTempFile) {
                 metaDB.updateEntry(fullPath, {
-                    action: Actions.DELETE
+                    action: Actions.DELETE,
+                    user: this.username,
+                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                    type: type
                 });
 
+                console.log(type + ' Deleted: ' + fullPath);
             }
+
         } else if (mask & Inotify.IN_MOVED_FROM) {
             this.data = event;
             this.data.type = type;
@@ -117,15 +130,26 @@ export default class FileSystemEventListener {
             if (isTempFile) {
                 this.data.temp = true;
             }
+
         } else if (mask & Inotify.IN_MOVED_TO) {
             if (Object.keys(this.data).length &&
                 this.data.cookie === event.cookie) {
 
+                let oldPath = this.data.path;
+
                 if (isDirectory) {
                     this.addWatch(fullPath);
-                    metaDB.updateMetadataForRenaming(this.data.path, fullPath, true);
+
+                    metaDB.updateEntry(oldPath, {
+                        action: Actions.RENAME,
+                        user: this.username,
+                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                        type: type,
+                        oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, '')
+                    });
+
                     console.log('Directory Renamed:');
-                    console.log('   Old path:' + this.data.path);
+                    console.log('   Old path:' + oldPath);
                     console.log('   New path:' + fullPath);
 
                 }
@@ -133,20 +157,25 @@ export default class FileSystemEventListener {
                     if (this.data.temp) {
                         metaDB.updateEntry(fullPath, {
                             action: Actions.MODIFY,
-                            current_cs: metaUtils.getCheckSum(fullPath),
+                            user: this.username,
+                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                            type: type,
+                            current_cs: metaUtils.getCheckSum(fullPath)
                         });
-                        // metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
-                        console.log('File modified:' + fullPath);
-                    }
-                    else {
-                        metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
-                        // metaDB.updateEntry(fullPath, {
-                        //     action: Actions.RENAME,
-                        //     oldPath: this.data.path,
-                        //     path: fullPath
-                        // });
+
+                        console.log('File modified 2:' + fullPath);
+
+                    } else {
+                        metaDB.updateEntry(oldPath, {
+                            action: Actions.RENAME,
+                            user: this.username,
+                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                            type: type,
+                            oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, '')
+                        });
+
                         console.log('File renamed');
-                        console.log('   Old path:' + this.data.path);
+                        console.log('   Old path:' + oldPath);
                         console.log('   New path:' + fullPath);
                     }
                 }
@@ -176,13 +205,14 @@ export default class FileSystemEventListener {
         return directories;
     }
 
-    deleteHashtable(value) {
+    deleteFromHashTableByDirectory(directory) {
         for (let key in this.hashtable) {
             if (this.hashtable.hasOwnProperty(key)) {
-                if (this.hashtable[key] === value) {
+                if (this.hashtable[key] === directory) {
                     delete this.hashtable[key];
                 }
             }
         }
     }
+
 }
