@@ -44,6 +44,16 @@ export default class MetadataDBHandler {
         });
     }
 
+    updateEntry(fullPath, updateEntry) {
+        const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
+
+        databases.fileMetaDataDb.update({path: path}, {$set: updateEntry}, {}, (err, numReplaced) => {
+            if (!err) {
+                console.log(numReplaced + " entries updated");
+            }
+        });
+    }
+
     /**
      * Update the current checksum field of an existing entry.
      *
@@ -61,7 +71,7 @@ export default class MetadataDBHandler {
     }
 
     /**
-     * Update the path filed of existing entries when renamed.
+     * Update the path field of existing entries when renamed.
      *
      * @param oldPath - Old path of the renamed renamed item.
      * @param newPath - New path of the renamed renamed item.
@@ -114,6 +124,31 @@ export default class MetadataDBHandler {
         });
     }
 
+    getUpdatedFilesOfUser(username) {
+        let result = {success: false};
+
+        return new Promise((resolve) => {
+            databases.fileMetaDataDb.find({
+                $and: [{user: username},
+                    {
+                        $where: function () {
+                            return Object.keys(this).synced_cs !== Object.keys(this).current_cs;
+                        }
+                    }]
+            }, (err, doc) => {
+                if (err) {
+                    this.handleError(result, 'Database error. Read updated files failed.', err);
+                } else {
+                    result.success = true;
+                    result.data = doc;
+                }
+
+                resolve(result);
+
+            });
+        });
+    }
+
     findMetadata(path) {
         databases.fileMetaDataDb.findOne({path: path}, (err, doc) => {
             if (err) {
@@ -135,5 +170,14 @@ export default class MetadataDBHandler {
             databases.fileMetaDataDb.remove({path: tempPath}, {}, () => {
             });
         });
+    }
+
+    handleError(result, msg, err) {
+        if (arguments.length === 3) {
+            console.error(msg, err);
+        } else {
+            console.error(msg);
+        }
+        result.error = msg;
     }
 }

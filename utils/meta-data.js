@@ -34,7 +34,7 @@ export function getFileMetadata(username, fullPath) {
     return {
         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
         user: username,
-        current_cs: getCheckSum(fullPath)
+        action: 'NEW'
     };
 }
 

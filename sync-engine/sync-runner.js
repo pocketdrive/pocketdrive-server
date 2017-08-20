@@ -43,8 +43,14 @@ export class SyncRunner {
 
     }
 
+    scanMetadataDBForChanges(username){
+        this.metaDbHandler.getUpdatedFilesOfUser(username).then((updates) => {
+            console.log('changed files', updates);
+        })
+    }
+
     onAddNewSyncDirectory(username, folderName) {
-        this.metaDbHandler.addFilesToSync(username, folderName);
+        this.metaDbHandler.addNewFolder(username, folderName);
         this.eventListeners.push(new FileSystemEventListener(username, folderName).start());
     }
 }

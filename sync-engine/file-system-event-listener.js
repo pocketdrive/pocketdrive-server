@@ -6,9 +6,11 @@ import * as _ from 'lodash';
 const p = console.log;
 import MetadataDBHandler from '../db/file-metadata-db';
 import * as metaUtils from '../utils/meta-data';
+import {error} from "../communicator/peer-messages";
 
 const metaDB = new MetadataDBHandler();
 const inotify = new Inotify();
+const Actions = {NEW: 'NEW', MODIFY: 'MODIFY', DELETE: 'DELETE', RENAME: 'RENAME', MOVE: 'MOVE'};
 
 /**
  * @author Pamoda Wimalasiri
@@ -76,7 +78,11 @@ export default class FileSystemEventListener {
 
         if (mask & Inotify.IN_MODIFY) {
             if (!isTempFile) {
-                metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
+                metaDB.updateEntry(fullPath, {
+                    action: Actions.MODIFY,
+                    current_cs: metaUtils.getCheckSum(fullPath),
+                });
+                // metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
                 console.log('File modified: ' + fullPath);
             }
         } else if (mask & Inotify.IN_CREATE) {
@@ -85,7 +91,10 @@ export default class FileSystemEventListener {
                 this.addWatch(fullPath);
             }
             else if (!isTempFile) {
-                metaDB.addNewFile(this.username, fullPath);
+                metaDB.updateEntry(fullPath, {
+                    action: Actions.NEW
+                });
+                // metaDB.addNewFile(this.username, fullPath);
                 console.log('New file created: ' + fullPath);
             }
         } else if (mask & Inotify.IN_DELETE) {
@@ -95,7 +104,10 @@ export default class FileSystemEventListener {
             }
             else if (!isTempFile) {
                 console.log('File Deleted: ' + fullPath);
-                metaDB.deleteFile(fullPath);
+                // metaDB.deleteFile(fullPath);
+                metaDB.updateEntry(fullPath, {
+                    action: Actions.DELETE
+                });
 
             }
         } else if (mask & Inotify.IN_MOVED_FROM) {
@@ -112,7 +124,7 @@ export default class FileSystemEventListener {
 
                 if (isDirectory) {
                     this.addWatch(fullPath);
-                    metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
+                    metaDB.updateMetadataForRenaming(this.data.path, fullPath, true);
                     console.log('Directory Renamed:');
                     console.log('   Old path:' + this.data.path);
                     console.log('   New path:' + fullPath);
@@ -120,11 +132,18 @@ export default class FileSystemEventListener {
                 }
                 else {
                     if (this.data.temp) {
-                        metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
+                        // TODO: Identify and handle this event later
+                        throw 'This event is not handled yet';
+                        // metaDB.updateCurrentCheckSum(fullPath, metaUtils.getCheckSum(fullPath));
                         console.log('File modified :' + fullPath);
                     }
                     else {
-                        metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
+                        // metaDB.updateMetadataForRenaming(this.data.path, fullPath, isDirectory);
+                        metaDB.updateEntry(fullPath, {
+                            action: Actions.RENAME,
+                            oldPath: this.data.path,
+                            path: fullPath
+                        });
                         console.log('File renamed');
                         console.log('   Old path:' + this.data.path);
                         console.log('   New path:' + fullPath);

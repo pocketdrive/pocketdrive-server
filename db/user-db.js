@@ -84,8 +84,8 @@ export default class UserDbHandler {
     }
 
     handleError(result, msg, err) {
-        if (arguments.length === 2) {
-            console.error(msg);
+        if (arguments.length === 3) {
+            console.error(msg, err);
         } else {
             console.error(msg);
         }
