@@ -85,7 +85,7 @@ export default class FileSystemEventListener {
                 this.addWatch(fullPath);
             }
             else if (!isTempFile) {
-                metaDB.insertMetadata(metaUtils.getFileMetadata(this.username, fullPath));
+                metaDB.addNewFile(this.username, fullPath);
                 console.log('New file created: ' + fullPath);
             }
         } else if (mask & Inotify.IN_DELETE) {
@@ -95,7 +95,7 @@ export default class FileSystemEventListener {
             }
             else if (!isTempFile) {
                 console.log('File Deleted: ' + fullPath);
-                metaDB.deleteMetadata(fullPath);
+                metaDB.deleteFile(fullPath);
 
             }
         } else if (mask & Inotify.IN_MOVED_FROM) {
