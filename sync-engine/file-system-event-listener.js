@@ -27,6 +27,7 @@ export default class FileSystemEventListener {
         p(this.baseDirectory);
         this.hashtable = {};
         this.data = {};
+        this.sequenceID = 0;
     }
 
     start() {
@@ -80,7 +81,8 @@ export default class FileSystemEventListener {
                     user: this.username,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
-                    current_cs: metaUtils.getCheckSum(fullPath)
+                    current_cs: metaUtils.getCheckSum(fullPath),
+                    sequenceID: this.sequenceID++
                 });
 
                 console.log(type + ' modified: ' + fullPath);
@@ -97,7 +99,8 @@ export default class FileSystemEventListener {
                     action: Actions.NEW,
                     user: this.username,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                    type: type
+                    type: type,
+                    sequenceID: this.sequenceID++
                 });
 
                 console.log('New ' + type + ' created: ' + fullPath);
@@ -116,7 +119,8 @@ export default class FileSystemEventListener {
                     action: Actions.DELETE,
                     user: this.username,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                    type: type
+                    type: type,
+                    sequenceID: this.sequenceID++
                 });
 
                 console.log(type + ' Deleted: ' + fullPath);
@@ -145,7 +149,8 @@ export default class FileSystemEventListener {
                         user: this.username,
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
-                        oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, '')
+                        oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
+                        sequenceID: this.sequenceID++
                     });
 
                     console.log('Directory Renamed:');
@@ -160,7 +165,8 @@ export default class FileSystemEventListener {
                             user: this.username,
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
-                            current_cs: metaUtils.getCheckSum(fullPath)
+                            current_cs: metaUtils.getCheckSum(fullPath),
+                            sequenceID: this.sequenceID++
                         });
 
                         console.log('File modified 2:' + fullPath);
@@ -171,7 +177,8 @@ export default class FileSystemEventListener {
                             user: this.username,
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
-                            oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, '')
+                            oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
+                            sequenceID: this.sequenceID++
                         });
 
                         console.log('File renamed');
