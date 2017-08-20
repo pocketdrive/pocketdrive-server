@@ -1,5 +1,3 @@
-import md5File from 'md5-file';
-import fs from 'fs';
 import path from 'path';
 import * as _ from 'lodash';
 
@@ -7,14 +5,37 @@ import * as databases from './dbs';
 import * as metaUtils from '../utils/meta-data';
 
 /**
+ * Database helper class to manage synced file meta data DB.
+ *
  * @author Pamoda Wimalasiri
  * @author Dulaj Atapattu
  */
 export default class MetadataDBHandler {
 
-    insertMetadata(entry) {
+    /**
+     * Register a new folder to sync. All files are added to the database recursively.
+     *
+     * @param username - Username of the folder owner
+     * @param syncPath - Relative path of the folder to sync
+     */
+    addFilesToSync(username, syncPath) {
+        const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
+        const fileList = metaUtils.getFileList(directory);
+
+        _.each(fileList, (file) => {
+            databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, file));
+        });
+    }
+
+    /**
+     * Add new single file to sync.
+     *
+     * @param username - Username of the file owner
+     * @param fullPath - Absolute path to the file
+     */
+    insertMetadata(username, fullPath) {
         entry.previous_cs = entry.new_cs;
-        databases.fileMetaDataDb.insert(entry, (err, doc) => {
+        databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, fullPath), (err, doc) => {
             if (err) {
                 console.log("could not insert : " + err);
             }
@@ -24,28 +45,12 @@ export default class MetadataDBHandler {
         });
     }
 
-    /*updateMetadata(path, entry) {
-        const tempPath = _.replace(path, process.env.PD_FOLDER_PATH, '');
-
-        /!*databases.fileMetaDataDb.findOne({path: tempPath}, (err, result) => {
-            if (!err) {
-                console.log('File found: ', JSON.stringify(result));
-                entry.previous_cs = result ? result.new_cs : entry.new_cs;
-                databases.fileMetaDataDb.update({path: tempPath}, {$set: entry}, {}, (err, numReplaced) => {
-                    if (!err) {
-                        console.log(numReplaced + " entries updated");
-                    }
-                });
-            }
-        });*!/
-
-        databases.fileMetaDataDb.update({path: tempPath}, {$set: entry}, {}, (err, numReplaced) => {
-            if (!err) {
-                console.log(numReplaced + " entries updated");
-            }
-        });
-    }*/
-
+    /**
+     * Update the current checksum field of an existing entry.
+     *
+     * @param fullPath - absolute path to the file
+     * @param checkSum - New checksum value to insert
+     */
     updateCurrentCheckSum(fullPath, checkSum) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
@@ -56,6 +61,13 @@ export default class MetadataDBHandler {
         });
     }
 
+    /**
+     * Update the path filed of existing entries when renamed.
+     *
+     * @param oldPath - Old path of the renamed renamed item.
+     * @param newPath - New path of the renamed renamed item.
+     * @param isDirectory - True if the item is a directory. Else false.
+     */
     updateMetadataForRenaming(oldPath, newPath, isDirectory) {
         const tempOldPath = _.replace(oldPath, process.env.PD_FOLDER_PATH, '');
         const tempNewPath = _.replace(newPath, process.env.PD_FOLDER_PATH, '');
@@ -105,15 +117,6 @@ export default class MetadataDBHandler {
             } else {
                 console.log('File found: ', doc.path);
             }
-        });
-    }
-
-    addFilesToSync(username, syncPath) {
-        const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
-        const fileList = metaUtils.getFileList(directory);
-
-        _.each(fileList, (file) => {
-            databases.fileMetaDataDb.insert(metaUtils.getFileMetadata(username, file));
         });
     }
 
