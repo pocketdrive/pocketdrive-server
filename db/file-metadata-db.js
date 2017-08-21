@@ -160,19 +160,30 @@ export default class MetadataDBHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.fileMetaDataDb.find({
-                $and: [{user: username},
-                    {
-                        $where: function () {
-                            return Object.keys(this).synced_cs !== Object.keys(this).current_cs;
-                        }
-                    }]
-            }, (err, doc) => {
+            databases.fileMetaDataDb.find({user: username}).sort({sequenceID: 1}).exec((err, docs) => {
                 if (err) {
-                    this.handleError(result, 'Database error. Read updated files failed.', err);
+                    this.handleError(result, 'DB Error. Cannot read meta data', err);
                 } else {
                     result.success = true;
-                    result.data = doc;
+                    result.data = docs;
+                }
+
+                resolve(result);
+
+            });
+        });
+    }
+
+    getNextSequenceID() {
+        let result = {success: false};
+
+        return new Promise((resolve) => {
+            databases.fileMetaDataDb.find({}).sort({sequenceID: -1}).limit(1).exec((err, docs) => {
+                if (err) {
+                    this.handleError(result, 'DB Error. Cannot get max sequenceID', err);
+                } else {
+                    result.success = true;
+                    result.data = (docs && docs.length!==0) ? docs[0].sequenceID + 1 : 0;
                 }
 
                 resolve(result);

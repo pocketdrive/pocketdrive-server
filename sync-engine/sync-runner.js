@@ -3,6 +3,7 @@ import * as _ from 'lodash';
 import MetadataDBHandler from '../db/file-metadata-db';
 import SyncDbHandler from '../db/sync-db';
 import FileSystemEventListener from '../sync-engine/file-system-event-listener';
+import {Actions} from "./file-system-event-listener";
 
 /**
  * @author Dulaj Atapattu
@@ -45,11 +46,24 @@ export class SyncRunner {
 
     scanMetadataDBForChanges(username){
         this.metaDbHandler.getUpdatedFilesOfUser(username).then((updates) => {
-            console.log('changed files', updates);
+            _.each(updates, (update) => {
+                switch (update.action){
+                    case Actions.NEW:
+                        break;
+                    case Actions.MODIFY:
+                        break;
+                    case Actions.RENAME:
+                        break;
+                    case Actions.DELETE:
+                        break;
+                }
+
+            })
         })
     }
 
     onAddNewSyncDirectory(username, folderName) {
+        // TODO: Rethink about this.
         // this.metaDbHandler.addNewFolder(username, folderName);
         this.eventListeners.push(new FileSystemEventListener(username, folderName).start());
     }

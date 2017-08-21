@@ -10,7 +10,7 @@ import {error} from "../communicator/peer-messages";
 
 const metaDB = new MetadataDBHandler();
 const inotify = new Inotify();
-const Actions = {NEW: 'NEW', MODIFY: 'MODIFY', DELETE: 'DELETE', RENAME: 'RENAME', MOVE: 'MOVE'};
+export const Actions = {NEW: 'NEW', MODIFY: 'MODIFY', DELETE: 'DELETE', RENAME: 'RENAME'};
 
 // TODO: Clean and refactor this class @dulaj
 /**
@@ -27,7 +27,10 @@ export default class FileSystemEventListener {
         p(this.baseDirectory);
         this.hashtable = {};
         this.data = {};
-        this.sequenceID = 0;
+
+        metaDB.getNextSequenceID().then((result) => {
+            this.sequenceID = result.data;
+        })
     }
 
     start() {
@@ -43,7 +46,12 @@ export default class FileSystemEventListener {
     }
 
     stop() {
-       // TODO: with hash table
+        for (let key in this.hashtable) {
+            if (this.hashtable.hasOwnProperty(key)) {
+                delete this.hashtable[key];
+                inotify.removeWatch(key);
+            }
+        }
     }
 
     addWatch(directory) {
