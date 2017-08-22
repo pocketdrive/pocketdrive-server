@@ -29,5 +29,6 @@ touch Notes.txt
 echo "This is a test document" >> Notes.txt
 
 # Edit smb.conf
+sudo su
 printf "\n[$username]\npath = ~/pocketdrive/$username\nvalid users = $smbuser\nread only = no" | sudo tee --append /etc/samba/smb.conf > /dev/null
 sudo service smbd restart

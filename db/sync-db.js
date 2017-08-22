@@ -30,12 +30,7 @@ export default class SyncDbHandler {
                     this.handleError(result, 'Database error. Cannot read sync folders', err);
                 } else {
                     result.success = true;
-
-                    if(doc){
-                        result.data = doc.syncFolders;
-                    } else{
-                        result.data = {}
-                    }
+                    result.data = doc ? doc.syncFolders : {};
                 }
 
                 resolve(result);
@@ -47,13 +42,13 @@ export default class SyncDbHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.find({},(err, doc) => {
+            databases.syncDb.find({}, (err, doc) => {
                 if (err) {
-                    this.handleError(result, 'Database error. Find users failed', err);
+                    this.handleError(result, 'Database error. Read all failed.', err);
                     resolve(result);
-                } else if (doc !== null) {
+                } else {
                     result.success = true;
-                    result.data = doc;
+                    result.data = doc ? doc : {};
                     resolve(result);
                 }
             });

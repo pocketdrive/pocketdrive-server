@@ -1,3 +1,6 @@
+/**
+ * @author Dulaj Atapattu
+ */
 exports.broadcast = function () {
     let SSDP = require('node-ssdp').Server
         , server = new SSDP({
@@ -13,4 +16,4 @@ exports.broadcast = function () {
     process.on('exit', function () {
         server.stop()
     })
-};
+}
