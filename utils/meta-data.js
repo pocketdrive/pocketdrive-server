@@ -6,11 +6,19 @@ import path from 'path';
 import md5File from 'md5-file';
 import * as _ from 'lodash';
 
+export function getFileListByArray(directoryArray) {
+    let results = [];
+    _.each(directoryArray, (dir) => {
+        results.push(...getFileList(dir));
+    });
+    return results;
+}
+
 export function getFileList(directory) {
     const files = fs.readdirSync(directory);
 
     let fileList = [];
-    
+
     for (let i in files) {
 
         if (!files.hasOwnProperty(i))
