@@ -38,7 +38,7 @@ router.post('/list', CommonUtils.authorize, function (req, res, next) {
 router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
-    dbh.setSyncFolders(req.username, data.syncFolders).then((result) => {
+    dbh.setSyncFolders(req.username, data.deviceID ,data.syncFolders).then((result) => {
         res.set('Content-Type', 'application/json');
         res.send(result);
     })

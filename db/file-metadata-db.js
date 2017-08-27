@@ -18,7 +18,7 @@ export default class MetadataDBHandler {
      * @param username - Username of the folder owner
      * @param syncPath - Relative path of the folder to sync
      */
-    addNewFolder(username, syncPath) {
+    static addNewFolder(username, syncPath) {
         const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
         const fileList = metaUtils.getFileList(directory);
 
@@ -33,7 +33,7 @@ export default class MetadataDBHandler {
      * @param username - Username of the file owner
      * @param fullPath - Absolute path to the file
      */
-    addNewFile(username, fullPath) {
+    static addNewFile(username, fullPath) {
         const entry = metaUtils.getFileMetadata(username, fullPath);
         databases.fileMetaDataDb.update({path: entry.path}, entry, {upsert: true}, (err, doc) => {
             if (err) {
@@ -45,7 +45,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    updateEntry(fullPath, updateEntry) {
+    static updateEntry(fullPath, updateEntry) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         databases.fileMetaDataDb.update({path: path}, updateEntry, {upsert: true}, (err, numReplaced) => {
@@ -55,13 +55,31 @@ export default class MetadataDBHandler {
         });
     }
 
+    static readEntry(fullPath) {
+        let result = {success: false};
+        const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
+
+        return new Promise((resolve) => {
+            databases.fileMetaDataDb.findOne({path: path}, (err, doc) => {
+                if (err) {
+                    this.handleError(result, 'RDatabase error!. Read entry failed', err);
+                } else {
+                    result.success = true;
+                    result.data = doc ? doc : {};
+                }
+
+                resolve(result);
+            });
+        });
+    }
+
     /**
      * Update the current checksum field of an existing entry.
      *
      * @param fullPath - absolute path to the file
      * @param checkSum - New checksum value to insert
      */
-    updateCurrentCheckSum(fullPath, checkSum) {
+    static updateCurrentCheckSum(fullPath, checkSum) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         databases.fileMetaDataDb.update({path: path}, {$set: {current_cs: checkSum}}, {}, (err, numReplaced) => {
@@ -78,7 +96,7 @@ export default class MetadataDBHandler {
      * @param newPath - New path of the renamed renamed item.
      * @param isDirectory - True if the item is a directory. Else false.
      */
-    updateMetadataForRenaming(oldPath, newPath, isDirectory) {
+    static updateMetadataForRenaming(oldPath, newPath, isDirectory) {
         const tempOldPath = _.replace(oldPath, process.env.PD_FOLDER_PATH, '');
         const tempNewPath = _.replace(newPath, process.env.PD_FOLDER_PATH, '');
 
@@ -119,7 +137,7 @@ export default class MetadataDBHandler {
         }
     }
 
-    removeFilesOfDeletedDirectory(fullPath) {
+    static removeFilesOfDeletedDirectory(fullPath) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         let regex = new RegExp(path);
@@ -141,12 +159,10 @@ export default class MetadataDBHandler {
     /**
      * Delete single file from meta data DB.
      *
-     * @param fullPath - Absolute path of the file
+     * @param path - Absolute path of the file
      */
-    deleteFile(fullPath) {
-        const tempPath = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
-
-        databases.fileMetaDataDb.remove({path: tempPath}, (err, numDeleted) => {
+    static deleteEntry(path) {
+        databases.fileMetaDataDb.remove({path: path}, (err, numDeleted) => {
             if (err) {
                 console.log(err);
             }
@@ -156,7 +172,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    getUpdatedFilesOfUser(username) {
+    static getUpdatedFilesOfUser(username) {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -174,7 +190,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    getNextSequenceID() {
+    static getNextSequenceID() {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -183,7 +199,7 @@ export default class MetadataDBHandler {
                     this.handleError(result, 'DB Error. Cannot get max sequenceID', err);
                 } else {
                     result.success = true;
-                    result.data = (docs && docs.length!==0) ? docs[0].sequenceID + 1 : 0;
+                    result.data = (docs && docs.length !== 0) ? docs[0].sequenceID + 1 : 0;
                 }
 
                 resolve(result);
@@ -192,7 +208,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    findMetadata(path) {
+    static findMetadata(path) {
         databases.fileMetaDataDb.findOne({path: path}, (err, doc) => {
             if (err) {
                 console.log(err);
@@ -202,7 +218,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    removeFilesFromSync(username, syncPath) {
+    static removeFilesFromSync(username, syncPath) {
         const directory = path.resolve(process.env.PD_FOLDER_PATH, username, syncPath);
         const fileList = metaUtils.getFileList(directory);
 
@@ -215,7 +231,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    handleError(result, msg, err) {
+    static handleError(result, msg, err) {
         if (arguments.length === 3) {
             console.error(msg, err);
         } else {

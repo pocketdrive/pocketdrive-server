@@ -51,6 +51,7 @@ export default class SocketCommunicator {
                     break;
             }
         });
+
         this.sockObject.on('file', (stream, json) => {
 
         });

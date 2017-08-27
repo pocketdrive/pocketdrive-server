@@ -1,3 +1,5 @@
+import SyncCommunicator from "./communicator/sync-communicator";
+
 const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -27,21 +29,38 @@ async function main() {
 
 main();
 
-// import {Synchronizer} from './SyncEngine/Synchronizer';
-// import fs from 'fs';
-// let syn = new Synchronizer();
-//
-// async function main() {
-//   "use strict";
-//   let oldChunks = await syn.getChunks('/Users/anuradhawick/Documents/FYP\ work/file_sync/target/B.pdf');
-//   let newChunks = await syn.getChunks('/Users/anuradhawick/Documents/FYP\ work/file_sync/A.pdf');
-//   let transmit = await syn.getTransmissionData(oldChunks, newChunks, fs.readFileSync('/Users/anuradhawick/Documents/FYP\ work/file_sync/A.pdf'));
-//
-//   syn.updateOldFile(transmit,'/Users/anuradhawick/Documents/FYP\ work/file_sync/target/B.pdf').then();
-//
-// }
-//
-// main();
+import {ChunkBasedSynchronizer} from './sync-engine/chunk-based-synchronizer'
+import {SyncRunner} from './sync-engine/sync-runner'
+
+const syncRunner = new SyncRunner();
+const communicator = new SyncCommunicator('dulaj');
+
+async function syncTest() {
+    // "use strict";
+    // let oldChunks = await synchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/old.txt');
+    // let newChunks = await synchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/new.txt');
+    // let transmit = await synchronizer.getTransmissionData(oldChunks, newChunks, fs.readFileSync('/home/dulaj/pocketdrive/dulaj/Documents/new.txt'));
+    //
+    // synchronizer.updateOldFile(transmit, '/home/dulaj/pocketdrive/dulaj/Documents/old.txt').then();
+
+
+    syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
+    // syncRunner.scanMetadataDBForChanges('dulaj');
+
+    /*const o = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2.txt');
+    const n = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2-1.txt');
+    const t = await ChunkBasedSynchronizer.getTransmissionData(o, n, fs.readFileSync('/home/dulaj/pocketdrive/dulaj/Documents/2-1.txt'));
+
+    console.log('o: ', o);
+    console.log('n: ', n);
+    console.log('t: ', t);
+
+    ChunkBasedSynchronizer.updateOldFile(t, '/home/dulaj/pocketdrive/dulaj/Documents/2.txt');*/
+
+}
+
+syncTest();
+
 import DataStore from 'nedb';
 // view engine setup
 // app.set('views', path.join(__dirname, 'views'));

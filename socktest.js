@@ -43,7 +43,7 @@ async function main() {
                             if (data.mtimeMs > fs.statSync(filePath).mtimeMs) {
 
                             }
-                            console.log('original: '+data.mtimeMs + ' client side: ' +fs.statSync(filePath).mtimeMs);
+                            console.log('original: ' + data.mtimeMs + ' client side: ' + fs.statSync(filePath).mtimeMs);
                         }
                     }
                 });
@@ -63,13 +63,12 @@ async function main() {
         switch (info.type) {
             case 'newFile':
                 createPath(fPath);
-                console.log('writing to path: ' +fPath)
+                console.log('writing to path: ' + fPath)
                 const writeStream = fs.createWriteStream(fPath);
                 readStream.pipe(writeStream);
                 break;
         }
     });
-
 
 }
 

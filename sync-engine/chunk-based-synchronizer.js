@@ -1,21 +1,21 @@
-/**
- * Created by anuradhawick on 7/28/17.
- */
 import fs from 'fs';
 import * as _ from 'lodash';
 import uuid from 'uuid/v4';
 import cmd from 'node-cmd';
 
-export class Synchronizer {
+/**
+ * @author Anuradha Wickramarachchi
+ */
+export class ChunkBasedSynchronizer {
 
-    async getChunks(filename) {
+    static async getChecksumOfChunks(filename) {
         let hashFilename = `${uuid()}`;
-        await new Promise((resolve) => {
+        let wait = await new Promise((resolve) => {
             cmd.get(
-                `./node_modules/.bin/rabin "${filename}" \
-                --bits=8 --min=512 --max=65536 > \
-                ./${hashFilename}`,
-                () => resolve()
+                `./node_modules/.bin/rabin "${filename}" --bits=8 --min=8192 --max=65536 > ${hashFilename}`,
+                function (err, data, stderr) {
+                    resolve()
+                }
             );
         });
 
@@ -29,18 +29,17 @@ export class Synchronizer {
                 return JSON.parse(val)
             });
         } catch (e) {
-            console.error(e);
+            console.log(e)
             return null;
         }
     }
 
-    async getTransmissionData(oldFileChunks, newFileChunks, newFileBuffer) {
+    static async getTransmissionData(oldFileChunks, newFileChunks, newFileBuffer) {
         let cs = oldFileChunks;
         let cs_new = newFileChunks;
         let new_file = newFileBuffer;
         let old_data = [];
         let new_data = [];
-
 
         _.each(cs_new, (n) => {
             let matchFound = false;
@@ -62,7 +61,7 @@ export class Synchronizer {
         return {oldData: old_data, newData: new_data};
     }
 
-    async updateOldFile(transmissionData, oldFilePath) {
+    static async updateOldFile(transmissionData, oldFilePath) {
         // TODO must be implemented as a C++ wrapper for performance
         let out = new Buffer(0);
         let existing_file = fs.readFileSync(`${oldFilePath}`);

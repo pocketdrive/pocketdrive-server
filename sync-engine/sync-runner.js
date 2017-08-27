@@ -3,7 +3,6 @@ import * as _ from 'lodash';
 import MetadataDBHandler from '../db/file-metadata-db';
 import SyncDbHandler from '../db/sync-db';
 import FileSystemEventListener from '../sync-engine/file-system-event-listener';
-import {Actions} from "./file-system-event-listener";
 
 /**
  * @author Dulaj Atapattu
@@ -11,8 +10,8 @@ import {Actions} from "./file-system-event-listener";
 export class SyncRunner {
 
     eventListeners = {};
-    metaDbHandler = new MetadataDBHandler();
-    syncDbHandler = new SyncDbHandler();
+    metaDbHandler = MetadataDBHandler.instance;
+    syncDbHandler = SyncDbHandler.instance;
 
     onPdStart() {
         this.syncDbHandler.getAllSyncingUsers().then((users) => {
@@ -22,6 +21,7 @@ export class SyncRunner {
                 _.each(user.syncFolders, (folderName) => {
                     this.eventListeners[user.username].push(new FileSystemEventListener(user.username, folderName).start());
                 });
+
             });
         });
     }
@@ -45,16 +45,16 @@ export class SyncRunner {
     }
 
     scanMetadataDBForChanges(username){
-        this.metaDbHandler.getUpdatedFilesOfUser(username).then((updates) => {
+        MetadataDBHandler.getUpdatedFilesOfUser(username).then((updates) => {
             _.each(updates, (update) => {
                 switch (update.action){
-                    case Actions.NEW:
+                    case SyncEvents.NEW:
                         break;
-                    case Actions.MODIFY:
+                    case SyncEvents.MODIFY:
                         break;
-                    case Actions.RENAME:
+                    case SyncEvents.RENAME:
                         break;
-                    case Actions.DELETE:
+                    case SyncEvents.DELETE:
                         break;
                 }
 
@@ -65,6 +65,10 @@ export class SyncRunner {
     onAddNewSyncDirectory(username, folderName) {
         // TODO: Rethink about this.
         // this.metaDbHandler.addNewFolder(username, folderName);
-        this.eventListeners.push(new FileSystemEventListener(username, folderName).start());
+        if(!this.eventListeners[username]){
+            this.eventListeners[username] = [];
+        }
+
+        this.eventListeners[username].push(new FileSystemEventListener(username, folderName).start());
     }
 }

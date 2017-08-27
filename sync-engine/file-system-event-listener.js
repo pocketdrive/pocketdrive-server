@@ -3,39 +3,38 @@ import fs from 'fs';
 import path from 'path';
 import * as _ from 'lodash';
 
-const p = console.log;
+import {SyncEvents} from '../sync-engine/sync-constants';
+
 import MetadataDBHandler from '../db/file-metadata-db';
+import ChecksumDBHandler from "../db/checksum-db";
 import * as metaUtils from '../utils/meta-data';
-import {error} from "../communicator/peer-messages";
 
-const metaDB = new MetadataDBHandler();
 const inotify = new Inotify();
-export const Actions = {NEW: 'NEW', MODIFY: 'MODIFY', DELETE: 'DELETE', RENAME: 'RENAME'};
 
-// TODO: Clean and refactor this class @dulaj
 /**
  * @author Pamoda Wimalasiri
+ * @author Dulaj Atapattu
  */
 export default class FileSystemEventListener {
 
-    constructor(username, folder) {
+    constructor(username, folder, deviceIDs) {
         // TODO create directory by environment
         // For each users sync directory start the watcher
         this.pdPath = process.env.PD_FOLDER_PATH;
         this.username = username;
+        this.deviceIDs = deviceIDs;
         this.baseDirectory = path.resolve(this.pdPath, username, folder);
-        p(this.baseDirectory);
         this.hashtable = {};
         this.data = {};
-
-        metaDB.getNextSequenceID().then((result) => {
-            this.sequenceID = result.data;
-        })
     }
 
-    start() {
+    async start() {
+        await MetadataDBHandler.getNextSequenceID().then((result) => {
+            this.sequenceID = result.data;
+        });
+
         this.addWatch(this.baseDirectory);
-        let directory_child = this.scandirSync(this.baseDirectory);
+        let directory_child = this.scanDirSync(this.baseDirectory);
         if (directory_child.length !== 0) {
             for (let i = 0, len = directory_child.length; i < len; i++) {
                 this.addWatch(directory_child[i]);
@@ -55,7 +54,7 @@ export default class FileSystemEventListener {
     }
 
     addWatch(directory) {
-        console.log(' [add_Watch] Add new watch for ' + directory);
+        console.log('Added watch for ' + directory);
         const watch = {
             path: directory,
             watch_for: Inotify.IN_ALL_EVENTS,
@@ -67,9 +66,8 @@ export default class FileSystemEventListener {
 
     }
 
-    inotifyCallback(event) {
+    async inotifyCallback(event) {
         let mask = event.mask;
-        p(mask);
         let isDirectory = mask & Inotify.IN_ISDIR;
         let isTempFile = false;
         let fullPath, type;
@@ -84,9 +82,10 @@ export default class FileSystemEventListener {
 
         if (mask & Inotify.IN_MODIFY) {
             if (!isTempFile) {
-                metaDB.updateEntry(fullPath, {
-                    action: Actions.MODIFY,
+                MetadataDBHandler.updateEntry(fullPath, {
+                    action: SyncEvents.MODIFY,
                     user: this.username,
+                    deviceIDs: this.deviceIDs,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
                     current_cs: metaUtils.getCheckSum(fullPath),
@@ -103,11 +102,13 @@ export default class FileSystemEventListener {
             }
 
             if (!isTempFile) {
-                metaDB.updateEntry(fullPath, {
-                    action: Actions.NEW,
+                MetadataDBHandler.updateEntry(fullPath, {
+                    action: SyncEvents.NEW,
                     user: this.username,
+                    deviceIDs: this.deviceIDs,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
+                    current_cs: metaUtils.getCheckSum(fullPath),
                     sequenceID: this.sequenceID++
                 });
 
@@ -118,16 +119,32 @@ export default class FileSystemEventListener {
             // TODO: Only shift delete works
             if (isDirectory) {
                 this.deleteFromHashTableByDirectory(fullPath);
-                metaDB.removeFilesOfDeletedDirectory(fullPath);
-                console.log('Directory removed from watch: ' + fullPath);
+                MetadataDBHandler.removeFilesOfDeletedDirectory(fullPath);
+                console.log('Removed watch for : ' + fullPath);
             }
 
             if (!isTempFile) {
-                metaDB.updateEntry(fullPath, {
-                    action: Actions.DELETE,
+                let current_cs = '';
+
+                await MetadataDBHandler.readEntry(fullPath).then(async (result) => {
+                    if (result.success && result.data.current_cs) {
+                        current_cs = result.data.current_cs;
+                    } else {
+                        await ChecksumDBHandler.getChecksum(this.username,_.replace(fullPath, process.env.PD_FOLDER_PATH, '')).then((result) => {
+                            if(result.success){
+                                current_cs = result.data;
+                            }
+                        })
+                    }
+                });
+
+                MetadataDBHandler.updateEntry(fullPath, {
+                    action: SyncEvents.DELETE,
                     user: this.username,
+                    deviceIDs: this.deviceIDs,
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
+                    current_cs: current_cs,
                     sequenceID: this.sequenceID++
                 });
 
@@ -152,9 +169,10 @@ export default class FileSystemEventListener {
                 if (isDirectory) {
                     this.addWatch(fullPath);
 
-                    metaDB.updateEntry(oldPath, {
-                        action: Actions.RENAME,
+                    MetadataDBHandler.updateEntry(oldPath, {
+                        action: SyncEvents.RENAME,
                         user: this.username,
+                        deviceIDs: this.deviceIDs,
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
                         oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
@@ -168,9 +186,10 @@ export default class FileSystemEventListener {
                 }
                 else {
                     if (this.data.temp) {
-                        metaDB.updateEntry(fullPath, {
-                            action: Actions.MODIFY,
+                        MetadataDBHandler.updateEntry(fullPath, {
+                            action: SyncEvents.MODIFY,
                             user: this.username,
+                            deviceIDs: this.deviceIDs,
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
                             current_cs: metaUtils.getCheckSum(fullPath),
@@ -180,9 +199,10 @@ export default class FileSystemEventListener {
                         console.log('File modified 2:' + fullPath);
 
                     } else {
-                        metaDB.updateEntry(oldPath, {
-                            action: Actions.RENAME,
+                        MetadataDBHandler.updateEntry(oldPath, {
+                            action: SyncEvents.RENAME,
                             user: this.username,
+                            deviceIDs: this.deviceIDs,
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
                             oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
@@ -200,7 +220,7 @@ export default class FileSystemEventListener {
         }
     }
 
-    scandirSync(directory) {
+    scanDirSync(directory) {
         let files = fs.readdirSync(directory);
         let directories = [];
         for (let file in files) {
@@ -214,7 +234,7 @@ export default class FileSystemEventListener {
             if (fs.statSync(name).isDirectory()) {
                 console.log(' [scandir] Directory: ' + name);
                 directories.push(name);
-                directories = directories.concat(this.scandirSync(name));
+                directories = directories.concat(this.scanDirSync(name));
             }
         }
         return directories;

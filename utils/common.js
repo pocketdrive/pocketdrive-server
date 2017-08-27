@@ -1,7 +1,8 @@
 import * as jwt from 'jsonwebtoken';
+import * as _ from 'lodash';
 
 /**
- * @author dulajra
+ * @author Dulaj Atapattu
  */
 export class CommonUtils {
 
@@ -29,6 +30,14 @@ export class CommonUtils {
         } else {
             res.sendStatus(403);
         }
+    }
+
+    static getLocalizedPath(normalizedPath) {
+        return path.resolve(process.env.PD_FOLDER_PATH, normalizedPath);
+    }
+
+    static getNormalizedPath(localizedPath) {
+        return _.replace(localizedPath, process.env.PD_FOLDER_PATH, '');
     }
 
 }
