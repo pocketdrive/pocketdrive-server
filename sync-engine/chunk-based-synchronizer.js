@@ -58,15 +58,16 @@ export class ChunkBasedSynchronizer {
             }
         });
 
-        return {oldData: old_data, newData: new_data};
+        return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data.toString()}));
     }
 
     static async updateOldFile(transmissionData, oldFilePath) {
         // TODO must be implemented as a C++ wrapper for performance
         let out = new Buffer(0);
         let existing_file = fs.readFileSync(`${oldFilePath}`);
-        let old_data = transmissionData.oldData;
-        let new_data = transmissionData.newData;
+        const dataJSON = JSON.parse(transmissionData.toString());
+        let old_data = dataJSON.oldData;
+        let new_data = new Buffer.from(dataJSON.newData);
 
         // merge changes to the new file
         while (old_data.length > 0 || new_data.length > 0) {
