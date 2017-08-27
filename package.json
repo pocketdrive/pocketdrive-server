@@ -26,6 +26,7 @@
     "serve-favicon": "~2.4.2",
     "sha256": "^0.2.0",
     "simple-peer": "^8.1.1",
+    "stream-to-buffer": "^0.1.0",
     "uuid": "^3.1.0",
     "wrtc": "0.0.62",
     "ws": "^3.1.0"

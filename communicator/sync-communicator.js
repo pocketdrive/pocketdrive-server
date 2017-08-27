@@ -1,6 +1,7 @@
 import {Server, Socket} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
+import streamToBuffer from 'stream-to-buffer';
 
 import {SyncMessages, SyncActions, SyncActionMessages, SyncEvents} from '../sync-engine/sync-constants';
 import * as syncActions from '../sync-engine/sync-actions';
@@ -116,6 +117,13 @@ export default class SyncCommunicator {
                 setChecksum(json.path, getCheckSum(fullPath));
                 callback({success: true});
             });
+        });
+
+        // can use anything in place of 'transmissiondata'
+        this.sockObject.on('transmissiondata', (readStream, json, callback) => {
+            streamToBuffer(readStream, (err, buffer) => {
+                // now you have the buffer here
+            })
         });
     }
 
