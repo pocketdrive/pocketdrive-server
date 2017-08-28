@@ -75,13 +75,9 @@ export default class SyncCommunicator {
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
                         const currentChecksum = getCurrentChecksum(fullOldPath);
 
-                        log('c: ', currentChecksum);
-                        log('jc: ', json.current_cs);
-                        log('js: ', json.synced_cs);
-
                         if (currentChecksum === json.current_cs) {
                             fs.renameSync(fullOldPath, fullPath);
-                            callBack({action: SyncActions.doNothing});log('1');
+                            callBack({action: SyncActions.doNothing});
 
                         } else if (currentChecksum === json.synced_cs) {
                             fs.renameSync(fullOldPath, fullPath);
@@ -100,11 +96,13 @@ export default class SyncCommunicator {
                 case SyncMessages.deleteFile:
                     console.log('Sync message [FILE][DELETE]: ', json.path);
 
-                    const currentChecksum = getCurrentChecksum(fullPath);
-                    const syncedChecksum = await getSyncedChecksum(json.path);
+                    if (syncActions.checkExistence(fullPath)) {
+                        const currentChecksum = getCurrentChecksum(fullPath);
+                        const syncedChecksum = await getSyncedChecksum(json.path);
 
-                    if (syncActions.checkExistence(fullPath) && (json.current_cs === currentChecksum || json.synced_cs === syncedChecksum)) {
-                        fs.unlinkSync(fullPath);
+                        if (json.current_cs === currentChecksum || json.synced_cs === currentChecksum) {
+                            fs.unlinkSync(fullPath);
+                        }
                     }
 
                     callBack({action: SyncActions.doNothing});
@@ -131,7 +129,7 @@ export default class SyncCommunicator {
             }
         });
 
-        this.sockObject.on('file', function (readStream, json, callback) {
+        this.sockObject.on('file', function (readStream, json) {
             console.log('Sync file [FILE_COPY]: ', json.path);
 
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
@@ -141,7 +139,6 @@ export default class SyncCommunicator {
 
             writeStream.on('finish', function () {
                 setSyncedChecksum(json.path, getCheckSum(fullPath));
-                callback({success: true});
             });
         });
 
@@ -187,6 +184,8 @@ export default class SyncCommunicator {
                 case SyncEvents.DELETE:
                     console.log('Sync request [FILE][DELETE]: ', dbEntry.path);
 
+                    await getSyncedChecksum('synced_cs: ', dbEntry.path);
+
                     this.socket.emit('message', {
                         type: SyncMessages.deleteFile,
                         path: dbEntry.path,
@@ -207,18 +206,16 @@ export default class SyncCommunicator {
             case SyncActions.justCopy:
                 console.log('Sync response [FILE][JUST_COPY]: ', dbEntry.path);
 
-                let writeStream = this.socket.stream('file', {path: dbEntry.path}, (response) => {
-                    console.log('File just copied : ' + response);
-                    afterSyncFile(dbEntry.path, dbEntry.current_cs);
-                });
-
+                let writeStream = this.socket.stream('file', {path: dbEntry.path});
                 fs.createReadStream(fullPath).pipe(writeStream);
+
+                afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.doNothing:
                 console.log('Sync response [FILE][DO_NOTHING]: ', dbEntry.path);
 
-                afterSyncFile(dbEntry.path);
+                afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.update:

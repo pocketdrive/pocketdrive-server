@@ -28,22 +28,15 @@ export async function createOrModifyFile(fullPath, remoteCurrentCS, remoteSynced
     else {
         const current_cs = getCurrentChecksum(fullPath);
 
-        console.log('current_cs', current_cs);
-        console.log('remoteCurrentCS', remoteCurrentCS);
-        console.log('remoteSyncedCs', remoteSyncedCs);
-
         if (current_cs === remoteCurrentCS) {
-            console.log('1');
             setSyncedChecksum(CommonUtils.getNormalizedPath(fullPath), current_cs);
             reply.action = SyncActions.doNothing;
         }
         else if (current_cs === remoteSyncedCs) {
-            console.log('2');
             reply.action = SyncActions.update;
             reply.oldFileChecksums = await ChunkBasedSynchronizer.getChecksumOfChunks(fullPath);
         }
         else {
-            console.log('3');
             reply.action = SyncActions.conflict;
         }
     }

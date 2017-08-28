@@ -83,9 +83,6 @@ export default class MetadataDBHandler {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         databases.fileMetaDataDb.update({path: path}, {$set: {current_cs: checkSum}}, {}, (err, numReplaced) => {
-            if (!err) {
-                console.log(numReplaced + " entries updated");
-            }
         });
     }
 
@@ -162,9 +159,6 @@ export default class MetadataDBHandler {
         databases.fileMetaDataDb.remove({path: path}, (err, numDeleted) => {
             if (err) {
                 console.log(err);
-            }
-            else {
-                console.log('Deleted', numDeleted, 'files');
             }
         });
     }
