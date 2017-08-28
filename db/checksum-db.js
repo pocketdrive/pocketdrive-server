@@ -27,7 +27,7 @@ export default class ChecksumDBHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.findOne({path: path}, (err, doc) => {
+            databases.checkSumDB.findOne({path: path}, (err, doc) => {
                 if (err) {
                     this.handleError(result, 'Database error. Cannot read checksum', err);
                 } else {

@@ -73,11 +73,15 @@ export default class SyncCommunicator {
                     const fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
 
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
-                        const currentChecksum = getCurrentChecksum(fullPath);
+                        const currentChecksum = getCurrentChecksum(fullOldPath);
+
+                        log('c: ', currentChecksum);
+                        log('jc: ', json.current_cs);
+                        log('js: ', json.synced_cs);
 
                         if (currentChecksum === json.current_cs) {
                             fs.renameSync(fullOldPath, fullPath);
-                            callBack({action: SyncActions.doNothing});
+                            callBack({action: SyncActions.doNothing});log('1');
 
                         } else if (currentChecksum === json.synced_cs) {
                             fs.renameSync(fullOldPath, fullPath);
@@ -97,8 +101,9 @@ export default class SyncCommunicator {
                     console.log('Sync message [FILE][DELETE]: ', json.path);
 
                     const currentChecksum = getCurrentChecksum(fullPath);
+                    const syncedChecksum = await getSyncedChecksum(json.path);
 
-                    if (syncActions.checkExistence(fullPath) && (json.current_cs === currentChecksum || json.synced_cs === currentChecksum)) {
+                    if (syncActions.checkExistence(fullPath) && (json.current_cs === currentChecksum || json.synced_cs === syncedChecksum)) {
                         fs.unlinkSync(fullPath);
                     }
 
