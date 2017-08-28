@@ -233,7 +233,6 @@ export default class FileSystemEventListener {
             let name = path.normalize(directory + '/' + files[file]);
 
             if (fs.statSync(name).isDirectory()) {
-                console.log(' [scandir] Directory: ' + name);
                 directories.push(name);
                 directories = directories.concat(this.scanDirSync(name));
             }

@@ -148,9 +148,6 @@ export default class MetadataDBHandler {
                     if (err) {
                         console.log(err);
                     }
-                    else {
-                        console.log('Deleted', numDeleted, 'files');
-                    }
                 });
             });
         });

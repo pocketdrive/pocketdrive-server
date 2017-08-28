@@ -1,5 +1,6 @@
 import * as jwt from 'jsonwebtoken';
 import * as _ from 'lodash';
+import * as os from 'os';
 
 /**
  * @author Dulaj Atapattu
@@ -38,6 +39,14 @@ export class CommonUtils {
 
     static getNormalizedPath(localizedPath) {
         return _.replace(localizedPath, process.env.PD_FOLDER_PATH, '');
+    }
+
+    static getDateTime(){
+        return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    }
+
+    static getDeviceName(){
+        return os.hostname();
     }
 
 }

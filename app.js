@@ -6,6 +6,7 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+import * as _ from 'lodash';
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -25,15 +26,17 @@ async function main() {
     // await cm.requestOnlineDevices();
 
     ssdp.broadcast();
+
 }
 
 main();
 
 import {ChunkBasedSynchronizer} from './sync-engine/chunk-based-synchronizer'
 import {SyncRunner} from './sync-engine/sync-runner'
+import MetadataDBHandler from "./db/file-metadata-db";
 
 const syncRunner = new SyncRunner();
-const communicator = new SyncCommunicator('dulaj');
+const communicator = new SyncCommunicator('dulaj', '127.0.0.1', 5000);
 
 async function syncTest() {
     // "use strict";
@@ -46,6 +49,12 @@ async function syncTest() {
 
     syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
     // syncRunner.scanMetadataDBForChanges('dulaj');
+
+    /*MetadataDBHandler.getUpdatedFilesOfUser('dulaj').then((result) => {
+        _.each(result.data, (dbEntry) => {
+            communicator.sendSyncRequest(dbEntry);
+        });
+    });*/
 
     /*const o = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2.txt');
     const n = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2-1.txt');
