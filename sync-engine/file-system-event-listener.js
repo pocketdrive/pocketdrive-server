@@ -203,9 +203,10 @@ export default class FileSystemEventListener {
                             action: SyncEvents.RENAME,
                             user: this.username,
                             deviceIDs: this.deviceIDs,
-                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
+                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
+                            current_cs: metaUtils.getCheckSum(fullPath),
                             sequenceID: this.sequenceID++
                         });
 

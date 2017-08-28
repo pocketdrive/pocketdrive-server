@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import streamToBuffer from 'stream-to-buffer';
 import stream from 'stream';
+import * as _ from 'lodash';
 
 import {SyncMessages, SyncActions, SyncActionMessages, SyncEvents} from '../sync-engine/sync-constants';
 import * as syncActions from '../sync-engine/sync-actions';
@@ -13,8 +14,9 @@ import {getCurrentChecksum} from "../sync-engine/sync-actions";
 import {afterSyncFile} from "../sync-engine/sync-actions";
 import {ChunkBasedSynchronizer} from "../sync-engine/chunk-based-synchronizer";
 import {deleteMetadataEntry} from "../sync-engine/sync-actions";
-import {setChecksum} from "../sync-engine/sync-actions";
+import {setSyncedChecksum} from "../sync-engine/sync-actions";
 import {getCheckSum} from "../utils/meta-data";
+import {getSyncedChecksum} from "../sync-engine/sync-actions";
 
 const log = console.log;
 
@@ -71,7 +73,19 @@ export default class SyncCommunicator {
                     const fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
 
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
-                        callBack({action: SyncActions.rename});
+                        const currentChecksum = getCurrentChecksum(fullPath);
+
+                        if (currentChecksum === json.current_cs) {
+                            fs.renameSync(fullOldPath, fullPath);
+                            callBack({action: SyncActions.doNothing});
+
+                        } else if (currentChecksum === json.synced_cs) {
+                            fs.renameSync(fullOldPath, fullPath);
+                            callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+
+                        } else {
+                            callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                        }
                     }
                     else {
                         callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
@@ -81,11 +95,14 @@ export default class SyncCommunicator {
 
                 case SyncMessages.deleteFile:
                     console.log('Sync request [FILE][DELETE]: ', json.path);
-                    if (syncActions.checkExistence(fullPath) && json.current_cs === getCurrentChecksum(fullPath)) {
-                        callBack({action: SyncActions.delete});
-                    } else {
-                        callBack({action: SyncActions.doNothing});
+
+                    const currentChecksum = getCurrentChecksum(fullPath);
+
+                    if (syncActions.checkExistence(fullPath) && (json.current_cs === currentChecksum || json.synced_cs === currentChecksum)) {
+                        fs.unlinkSync(fullPath);
                     }
+
+                    callBack({action: SyncActions.doNothing});
 
                     break;
 
@@ -115,7 +132,7 @@ export default class SyncCommunicator {
             readStream.pipe(writeStream);
 
             writeStream.on('finish', function () {
-                setChecksum(json.path, getCheckSum(fullPath));
+                setSyncedChecksum(json.path, getCheckSum(fullPath));
                 callback({success: true});
             });
         });
@@ -135,26 +152,37 @@ export default class SyncCommunicator {
                 case SyncEvents.MODIFY:
                     console.log('Syncing [FILE][MODIFY]: ', dbEntry.path);
 
-                    let syncedChecksum = '';
-
-                    await ChecksumDBHandler.getChecksum(dbEntry.path).then((result) => {
-                        syncedChecksum = result.data;
-                        log(syncedChecksum);
-                    });
-
                     this.socket.emit('message', {
                         type: SyncMessages.modifyFile,
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
-                        synced_cs: syncedChecksum
+                        synced_cs: await getSyncedChecksum(dbEntry.path),
                     }, (response) => this.onResponse(dbEntry, response));
 
                     break;
 
                 case SyncEvents.RENAME:
+                    console.log('Syncing [FILE][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
+
+                    this.socket.emit('message', {
+                        type: SyncMessages.renameFile,
+                        path: dbEntry.path,
+                        oldPath: dbEntry.oldPath,
+                        current_cs: dbEntry.current_cs,
+                        synced_cs: await getSyncedChecksum(dbEntry.path),
+                    }, (response) => this.onResponse(dbEntry, response));
+
                     break;
 
                 case SyncEvents.DELETE:
+                    console.log('Syncing [FILE][DELETE]: ', dbEntry.path);
+
+                    this.socket.emit('message', {
+                        type: SyncMessages.deleteFile,
+                        path: dbEntry.path,
+                        current_cs: dbEntry.current_cs,
+                        synced_cs: await getSyncedChecksum(dbEntry.path),
+                    }, (response) => this.onResponse(dbEntry, response));
                     break;
             }
         } else if (dbEntry.type === 'dir') {
@@ -182,7 +210,7 @@ export default class SyncCommunicator {
             case SyncActions.doNothing:
                 console.log('Sync action [FILE][DO_NOTHING]: ', dbEntry.path);
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.path);
                 break;
 
             case SyncActions.update:
@@ -223,13 +251,12 @@ export default class SyncCommunicator {
                 let ws = this.socket.stream('file', {path: newPath}, (response) => {
                     console.log('Conflicted file copied : ' + response);
                     deleteMetadataEntry(dbEntry.path);
-                    setChecksum(newPath, dbEntry.current_cs);
+                    setSyncedChecksum(newPath, dbEntry.current_cs);
                 });
 
                 fs.createReadStream(fullNewPath).pipe(ws);
                 // TODO: Check whether the remote side original file has to be copied manually.
                 break;
-
         }
     }
 

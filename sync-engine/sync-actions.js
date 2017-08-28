@@ -29,7 +29,7 @@ export async function createOrModifyFile(fullPath, remoteCurrentCS, remoteSynced
         const current_cs = getCurrentChecksum(fullPath);
 
         if (current_cs === remoteCurrentCS) {
-            setChecksum(CommonUtils.getNormalizedPath(fullPath), current_cs);
+            setSyncedChecksum(CommonUtils.getNormalizedPath(fullPath), current_cs);
             reply.action = SyncActions.doNothing;
         }
         else if (current_cs === remoteSyncedCs) {
@@ -56,7 +56,7 @@ export function afterSyncFile(path, syncedChecksum) {
     deleteMetadataEntry(path);
 
     if (arguments.length === 2) {
-        setChecksum(path, syncedChecksum);
+        setSyncedChecksum(path, syncedChecksum);
     }
 }
 
@@ -64,6 +64,16 @@ export function deleteMetadataEntry(path) {
     MetadataDBHandler.deleteEntry(path);
 }
 
-export function setChecksum(path, syncedChecksum) {
+export function setSyncedChecksum(path, syncedChecksum) {
     ChecksumDBHandler.setChecksum(path, syncedChecksum);
+}
+
+export async function getSyncedChecksum(path) {
+    let syncedChecksum = '';
+
+    await ChecksumDBHandler.getChecksum(path).then((result) => {
+        syncedChecksum = result.data;
+    });
+
+    return syncedChecksum;
 }
