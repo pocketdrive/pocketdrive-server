@@ -27,8 +27,6 @@ export async function createOrModifyFile(fullPath, remoteCurrentCS, remoteSynced
     }
     else {
         const current_cs = getCurrentChecksum(fullPath);
-        console.log('current_cs: ', current_cs);
-        console.log('remoteSyncedCs: ', remoteSyncedCs);
 
         if (current_cs === remoteCurrentCS) {
             setChecksum(CommonUtils.getNormalizedPath(fullPath), current_cs);

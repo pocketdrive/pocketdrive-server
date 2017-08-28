@@ -5,7 +5,7 @@ import * as databases from './dbs';
 
 export default class SyncDbHandler {
 
-    setSyncFolders(username, deviceID, folderNames) {
+    static setSyncFolders(username, deviceID, folderNames) {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -21,7 +21,7 @@ export default class SyncDbHandler {
         });
     }
 
-    getSyncFolders(username) {
+    static getSyncFolders(username) {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -38,7 +38,7 @@ export default class SyncDbHandler {
         });
     }
 
-    getAllSyncingUsers() {
+    static getAllSyncingUsers() {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -55,7 +55,7 @@ export default class SyncDbHandler {
         });
     }
 
-    handleError(result, msg, err) {
+    static handleError(result, msg, err) {
         if (arguments.length === 2) {
             console.error(msg);
         } else {

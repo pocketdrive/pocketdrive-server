@@ -2,6 +2,7 @@ import {Server, Socket} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
 import streamToBuffer from 'stream-to-buffer';
+import stream from 'stream';
 
 import {SyncMessages, SyncActions, SyncActionMessages, SyncEvents} from '../sync-engine/sync-constants';
 import * as syncActions from '../sync-engine/sync-actions';
@@ -119,10 +120,10 @@ export default class SyncCommunicator {
             });
         });
 
-        // can use anything in place of 'transmissiondata'
-        this.sockObject.on('transmissiondata', (readStream, json, callback) => {
-            streamToBuffer(readStream, (err, buffer) => {
-                // now you have the buffer here
+        this.sockObject.on('transmissionData', (readStream, json, callback) => {
+            streamToBuffer(readStream, (err, transmissionData) => {
+                const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+                ChunkBasedSynchronizer.updateOldFile(transmissionData, fullPath);
             })
         });
     }
@@ -193,11 +194,18 @@ export default class SyncCommunicator {
                 const transmissionData = await ChunkBasedSynchronizer.getTransmissionData(response.oldFileChecksums, newFileChecksum, fs.readFileSync(fullPath));
                 log('transmissionData: ', transmissionData);
 
-                this.socket.emit('action', {
+                /*this.socket.emit('action', {
                     type: SyncActionMessages.chunkBasedSync,
                     transmissionData: transmissionData,
                     path: dbEntry.path
-                });
+                });*/
+
+                writeStream = this.socket.stream('transmissionData', {path: dbEntry.path});
+
+                let bufferStream = new stream.PassThrough();
+                bufferStream.end(transmissionData);
+                bufferStream.pipe(writeStream);
+
                 afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
 
