@@ -45,13 +45,15 @@ export default class MetadataDBHandler {
         });
     }
 
+    static insertEntry(entry) {
+        databases.fileMetaDataDb.insert(entry, (err) => {
+        });
+    }
+
     static updateEntry(fullPath, updateEntry) {
         const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
 
         databases.fileMetaDataDb.update({path: path}, updateEntry, {upsert: true}, (err, numReplaced) => {
-            if (!err) {
-                console.log(numReplaced + " entries updated");
-            }
         });
     }
 

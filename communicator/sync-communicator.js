@@ -10,7 +10,7 @@ import * as syncActions from '../sync-engine/sync-actions';
 import ChecksumDBHandler from "../db/checksum-db";
 import {modifyExistingFile} from "../sync-engine/sync-actions";
 import {createOrModifyFile} from "../sync-engine/sync-actions";
-import {getCurrentChecksum} from "../sync-engine/sync-actions";
+import {getFileChecksum} from "../sync-engine/sync-actions";
 import {afterSyncFile} from "../sync-engine/sync-actions";
 import {ChunkBasedSynchronizer} from "../sync-engine/chunk-based-synchronizer";
 import {deleteMetadataEntry} from "../sync-engine/sync-actions";
@@ -18,6 +18,9 @@ import {setSyncedChecksum} from "../sync-engine/sync-actions";
 import {getCheckSum} from "../utils/meta-data";
 import {getSyncedChecksum} from "../sync-engine/sync-actions";
 import {CommonUtils} from "../utils/common";
+import {checkExistence} from "../sync-engine/sync-actions";
+import {isFolderEmpty} from "../sync-engine/sync-actions";
+import {getFolderChecksum} from "../sync-engine/sync-actions";
 
 const log = console.log;
 
@@ -70,14 +73,15 @@ export default class SyncCommunicator {
 
                 case SyncMessages.renameFile:
                     console.log('Sync message [FILE][RENAME]: ', json.oldPath, ' --> ', json.path);
-                    const fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
+
+                    let fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
 
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
-                        const currentChecksum = getCurrentChecksum(fullOldPath);
+                        const currentChecksum = getFileChecksum(fullOldPath);
 
                         if (currentChecksum === json.current_cs) {
                             fs.renameSync(fullOldPath, fullPath);
-                            callBack({action: SyncActions.doNothing});
+                            callBack({action: SyncActions.doNothingFile});
 
                         } else if (currentChecksum === json.synced_cs) {
                             fs.renameSync(fullOldPath, fullPath);
@@ -97,16 +101,62 @@ export default class SyncCommunicator {
                     console.log('Sync message [FILE][DELETE]: ', json.path);
 
                     if (syncActions.checkExistence(fullPath)) {
-                        const currentChecksum = getCurrentChecksum(fullPath);
-                        const syncedChecksum = await getSyncedChecksum(json.path);
+                        const currentChecksum = getFileChecksum(fullPath);
 
                         if (json.current_cs === currentChecksum || json.synced_cs === currentChecksum) {
                             fs.unlinkSync(fullPath);
                         }
                     }
 
-                    callBack({action: SyncActions.doNothing});
+                    callBack({action: SyncActions.doNothingFile});
 
+                    break;
+
+                case SyncMessages.newFolder:
+                    console.log('Sync message [DIR][NEW]: ', json.path);
+
+                    if (!checkExistence(fullPath)) {
+                        fs.mkdirSync(fullPath);
+                    }
+
+                    callBack({action: SyncActions.doNothingDir});
+
+                    break;
+
+                case SyncMessages.deleteFolder:
+                    console.log('Sync message [DIR][DELETE]: ', json.path);
+
+                    if (syncActions.checkExistence(fullPath) && isFolderEmpty(fullPath)) {
+                        fs.rmdirSync(fullPath);
+                    }
+
+                    callBack({action: SyncActions.doNothingDir});
+
+                    break;
+
+                case SyncMessages.renameFolder:
+                    console.log('Sync message [DIR][RENAME]: ', json.oldPath, ' --> ', json.path);
+
+                    fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
+
+                    if (checkExistence(fullOldPath) && getFolderChecksum(fullOldPath) === json.current_cs) {
+                        if (checkExistence(fullPath)) {
+                            fs.renameSync(fullOldPath, fullPath);
+                        } else {
+                            const names = _.split(json.path, '/');
+                            const newName = names[names.length] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
+                            const newPath = _.replace(json.path, names[names.length - 1], newName);
+                            const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, newPath);
+
+                            fs.renameSync(fullOldPath, fullNewPath);
+                        }
+
+                        callBack({action: SyncActions.doNothingDir});
+
+                    }
+                    else {
+                        callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                    }
                     break;
 
                 /*case sm.requestFile:
@@ -118,13 +168,19 @@ export default class SyncCommunicator {
             }
         });
 
-        this.sockObject.on('action', (json) => {
+        this.sockObject.on('action', (json, callBack) => {
+            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+
             switch (json.type) {
                 case SyncActionMessages.chunkBasedSync:
                     console.log('Sync action [CHUNK_BASED_SYNC]: ', json.path);
-
-                    const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
                     ChunkBasedSynchronizer.updateOldFile(json.transmissionData, fullPath);
+                    break;
+
+                case SyncActionMessages.newFolder:
+                    console.log('Sync action [NEW_FOLDER]: ', json.path);
+                    fs.mkdirSync(fullPath);
+                    callBack();
                     break;
             }
         });
@@ -195,7 +251,39 @@ export default class SyncCommunicator {
                     break;
             }
         } else if (dbEntry.type === 'dir') {
-            // TODO
+            switch (dbEntry.action) {
+                case SyncEvents.NEW:
+                    console.log('Sync request [DIR][NEW]: ', dbEntry.path);
+
+                    this.socket.emit('message', {
+                        type: SyncMessages.newFolder,
+                        path: dbEntry.path,
+                    }, (response) => this.onResponse(dbEntry, response));
+
+                    break;
+
+                case SyncEvents.RENAME:
+                    console.log('Sync request [DIR][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
+
+                    this.socket.emit('message', {
+                        type: SyncMessages.renameFolder,
+                        path: dbEntry.path,
+                        oldPath: dbEntry.oldPath,
+                        current_cs: dbEntry.current_cs
+                    }, (response) => this.onResponse(dbEntry, response));
+                    break;
+
+                case SyncEvents.DELETE:
+                    console.log('Sync request [DIR][DELETE]: ', dbEntry.path);
+
+                    this.socket.emit('message', {
+                        type: SyncMessages.deleteFolder,
+                        path: dbEntry.path,
+                    }, (response) => this.onResponse(dbEntry, response));
+
+                    break;
+
+            }
         }
     }
 
@@ -212,10 +300,16 @@ export default class SyncCommunicator {
                 afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
 
-            case SyncActions.doNothing:
-                console.log('Sync response [FILE][DO_NOTHING]: ', dbEntry.path);
+            case SyncActions.doNothingFile:
+                console.log('Sync response [FILE][DO_NOTHING_FILE]: ', dbEntry.path);
 
                 afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                break;
+
+            case SyncActions.doNothingDir:
+                console.log('Sync response [FILE][DO_NOTHING_DIR]: ', dbEntry.path);
+
+                afterSyncFile(dbEntry.path);
                 break;
 
             case SyncActions.update:
@@ -260,6 +354,28 @@ export default class SyncCommunicator {
                 // TODO: Check whether the remote side original file has to be copied manually.
                 break;
         }
+    }
+
+    syncNewDirectory(sourcePath) {
+        this.socket.emit('action', {
+            type: SyncActionMessages.newFolder,
+            path: sourcePath
+        }, () => {
+            let fullPath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
+            const files = fs.readdirSync(fullPath);
+
+            for (let i = 0; i < files.length; i++) {
+                const itemPath = path.resolve(fullPath, files[i]);
+
+                if (fs.statSync(itemPath).isDirectory()) {
+                    this.syncNewDirectory(itemPath);
+                }
+                else {
+                    let ws = this.socket.stream('file', {path: sourcePath + file});
+                    fs.createReadStream(itemPath).pipe(ws);
+                }
+            }
+        });
     }
 
 }

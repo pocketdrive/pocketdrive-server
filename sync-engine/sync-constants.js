@@ -13,15 +13,20 @@ export const SyncMessages = {
     newFile: 'newFile',
     modifyFile: 'modifyFile',
     renameFile: 'renameFile',
-    deleteFile: 'deleteEntry'
+    deleteFile: 'deleteEntry',
+    newFolder: 'newFolder',
+    renameFolder: 'renameFolder',
+    deleteFolder: 'deleteFolder'
 };
 
 export const SyncActionMessages = {
-    chunkBasedSync: 'chunkBasedSync'
+    chunkBasedSync: 'chunkBasedSync',
+    newFolder: 'newFolder'
 };
 
 export const SyncActions = {
-    doNothing: 'doNothing',
+    doNothingFile: 'doNothingFile',
+    doNothingDir: 'doNothingDir',
     justCopy: 'justCopy',
     update: 'update',
     conflict: 'conflict',

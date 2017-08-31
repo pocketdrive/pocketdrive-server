@@ -7,5 +7,4 @@ export const fileMetaDataDb = new DataStore({filename: process.env.NE_DB_PATH_FI
 export const syncDb = new DataStore({filename: process.env.NE_DB_PATH_SYNC, autoload: true});
 export const checkSumDB = new DataStore({filename: process.env.NE_DB_PATH_CHECKSUM, autoload: true});
 
-fileMetaDataDb.ensureIndex({ fieldName: 'path', unique: true });
 userDb.ensureIndex({ fieldName: 'username', unique: true });

@@ -8,6 +8,7 @@ import {SyncEvents} from '../sync-engine/sync-constants';
 import MetadataDBHandler from '../db/file-metadata-db';
 import ChecksumDBHandler from "../db/checksum-db";
 import * as metaUtils from '../utils/meta-data';
+import {getFolderChecksum} from "./sync-actions";
 
 const inotify = new Inotify();
 
@@ -120,7 +121,6 @@ export default class FileSystemEventListener {
             if (isDirectory) {
                 this.deleteFromHashTableByDirectory(fullPath);
                 MetadataDBHandler.removeFilesOfDeletedDirectory(fullPath);
-                console.log('Removed watch for : ' + fullPath);
             }
 
             if (!isTempFile) {
@@ -169,12 +169,13 @@ export default class FileSystemEventListener {
                 if (isDirectory) {
                     this.addWatch(fullPath);
 
-                    MetadataDBHandler.updateEntry(oldPath, {
+                    MetadataDBHandler.insertEntry({
                         action: SyncEvents.RENAME,
                         user: this.username,
                         deviceIDs: this.deviceIDs,
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
+                        current_cs: getFolderChecksum(fullPath),
                         oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
                         sequenceID: this.sequenceID++
                     });

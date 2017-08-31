@@ -7,6 +7,8 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 import * as _ from 'lodash';
+import fs from 'fs';
+import dir from 'node-dir';
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -26,6 +28,14 @@ async function main() {
     // await cm.requestOnlineDevices();
 
     ssdp.broadcast();
+
+    // let h1 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/1');
+    // let h2 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/2');
+    //
+    // console.log(h1);
+    // console.log(h2);
+
+    // fs.renameSync('/home/dulaj/pocketdrive/dulaj/Documents/6', '/home/dulaj/pocketdrive/dulaj/Documents/5');
 
 }
 
@@ -47,7 +57,7 @@ async function syncTest() {
     // synchronizer.updateOldFile(transmit, '/home/dulaj/pocketdrive/dulaj/Documents/old.txt').then();
 
 
-    syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
+    // syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
     // syncRunner.scanMetadataDBForChanges('dulaj');
 
     /*MetadataDBHandler.getUpdatedFilesOfUser('dulaj').then((result) => {
@@ -71,6 +81,8 @@ async function syncTest() {
 syncTest();
 
 import DataStore from 'nedb';
+import {checkExistence, getFileChecksum, getFolderChecksum, isFolderEmpty} from "./sync-engine/sync-actions";
+import {getCheckSum} from "./utils/meta-data";
 // view engine setup
 // app.set('views', path.join(__dirname, 'views'));
 // app.set('view engine', 'jade');

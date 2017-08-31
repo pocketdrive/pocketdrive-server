@@ -5,7 +5,9 @@ import * as _ from 'lodash';
 // Get all files and folders of the given path recursively
 export function allFilesFolders(dir) {
     var items = [];
-    if (dir[dir.length - 1] !== '/') dir = dir.concat('/')
+    if (dir[dir.length - 1] !== '/') {
+        dir = dir.concat('/');
+    }
     files = fs.readdirSync(dir);
 
     files.forEach(function (file) {
