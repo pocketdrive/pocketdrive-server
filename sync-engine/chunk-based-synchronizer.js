@@ -25,11 +25,14 @@ export class ChunkBasedSynchronizer {
         });
 
         try {
+            if (out.length === 0) {
+                return [];
+            }
             return _.map(_.trim(out).split('\n'), (val) => {
-                return JSON.parse(val)
+                return JSON.parse(val);
             });
         } catch (e) {
-            console.log(e)
+            console.log(e);
             return null;
         }
     }
