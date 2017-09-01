@@ -65,9 +65,9 @@ async function syncTest() {
     // syncRunner.scanMetadataDBForChanges('dulaj');
 
     /*MetadataDBHandler.getUpdatedFilesOfUser('dulaj').then((result) => {
-        _.each(result.data, (dbEntry) => {
-            communicator.sendSyncRequest(dbEntry);
-        });
+        for (let i = 0; i < result.data.length; i++) {
+            communicator.sendSyncRequest(result.data[i]);
+        }
     });*/
 
     /*const o = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2.txt');

@@ -383,8 +383,6 @@ export default class SyncCommunicator {
         // TODO: Recheck for folder names with dots.
         const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
 
-        log(fullSourcePath);
-
         this.socket.emit('action', {
             type: SyncActionMessages.newFolder,
             path: targetPath
