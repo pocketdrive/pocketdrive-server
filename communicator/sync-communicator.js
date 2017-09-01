@@ -139,8 +139,6 @@ export default class SyncCommunicator {
 
                     fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
 
-                    log(await getFolderChecksum(fullOldPath));
-
                     if (checkExistence(fullOldPath) && await getFolderChecksum(fullOldPath) === json.current_cs) {
                         if (!checkExistence(fullPath)) {
                             fs.renameSync(fullOldPath, fullPath);
