@@ -139,8 +139,10 @@ export default class SyncCommunicator {
 
                     fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
 
-                    if (checkExistence(fullOldPath) && getFolderChecksum(fullOldPath) === json.current_cs) {
-                        if (checkExistence(fullPath)) {
+                    log(await getFolderChecksum(fullOldPath));
+
+                    if (checkExistence(fullOldPath) && await getFolderChecksum(fullOldPath) === json.current_cs) {
+                        if (!checkExistence(fullPath)) {
                             fs.renameSync(fullOldPath, fullPath);
                         } else {
                             const names = _.split(json.path, '/');
@@ -155,8 +157,14 @@ export default class SyncCommunicator {
 
                     }
                     else {
-                        callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                        if (!checkExistence(fullPath)) {
+                            callBack({action: SyncActions.streamFolder, isConflict: false});
+                        }
+                        else {
+                            callBack({action: SyncActions.streamFolder, isConflict: true});
+                        }
                     }
+
                     break;
 
                 /*case sm.requestFile:
@@ -353,13 +361,26 @@ export default class SyncCommunicator {
                 fs.createReadStream(fullNewPath).pipe(ws);
                 // TODO: Check whether the remote side original file has to be copied manually.
                 break;
+
+            case SyncActions.streamFolder:
+                console.log('Sync response [DIR][STREAM_FOLDER]: ', dbEntry.path);
+
+                if(response.isConflict){
+                    const names = _.split(dbEntry.path, '/');
+                    const newName = names[names.length] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
+                    const newPath = _.replace(dbEntry.path, names[names.length - 1], newName);
+
+                    this.syncNewDirectory(dbEntry.path, newPath);
+
+                } else {
+                    this.syncNewDirectory(dbEntry.path, dbEntry.path)
+                }
+                break;
         }
     }
 
-    syncNewDirectory(sourceBasePath, sourceFolderName, targetBasePath, targetFolderName) {
+    syncNewDirectory(sourcePath, targetPath) {
         // TODO: Recheck for folder names with dots.
-        const sourcePath = path.join(sourceBasePath, sourceFolderName);
-        const targetPath = path.join(targetBasePath, targetFolderName);
         const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
 
         log(fullSourcePath);
@@ -373,14 +394,14 @@ export default class SyncCommunicator {
             for (let i = 0; i < files.length; i++) {
                 const sourceItemPath = path.join(sourcePath, files[i]);
                 const targetItemPath = path.join(targetPath, files[i]);
-                const fullItemPath = path.resolve(process.env.PD_FOLDER_PATH, sourceItemPath);
+                const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, sourceItemPath);
 
-                if (fs.statSync(fullItemPath).isDirectory()) {
-                    this.syncNewDirectory(sourcePath, files[i], targetPath, files[i]);
+                if (fs.statSync(fullSourceItemPath).isDirectory()) {
+                    this.syncNewDirectory(sourceItemPath, targetItemPath);
                 }
                 else {
                     let ws = this.socket.stream('file', {path: targetItemPath});
-                    fs.createReadStream(fullItemPath).pipe(ws);
+                    fs.createReadStream(fullSourceItemPath).pipe(ws);
                 }
             }
         });

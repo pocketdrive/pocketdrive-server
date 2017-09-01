@@ -197,7 +197,7 @@ export default class FileSystemEventListener {
                             sequenceID: this.sequenceID++
                         });
 
-                        console.log('File modified 2:' + fullPath);
+                        console.log('File modified:' + fullPath);
 
                     } else {
                         MetadataDBHandler.updateEntry(oldPath, {
