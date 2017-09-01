@@ -174,15 +174,10 @@ export default class SyncCommunicator {
             }
         });
 
-        this.sockObject.on('action', (json, callBack) => {
+        this.sockObject.on('action', async (json, callBack) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
 
             switch (json.type) {
-                case SyncActionMessages.chunkBasedSync:
-                    console.log('Sync action [CHUNK_BASED_SYNC]: ', json.path);
-                    ChunkBasedSynchronizer.updateOldFile(json.transmissionData, fullPath);
-                    break;
-
                 case SyncActionMessages.newFolder:
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
                     fs.mkdirSync(fullPath);
@@ -246,8 +241,6 @@ export default class SyncCommunicator {
                 case SyncEvents.DELETE:
                     console.log('Sync request [FILE][DELETE]: ', dbEntry.path);
 
-                    await getSyncedChecksum('synced_cs: ', dbEntry.path);
-
                     this.socket.emit('message', {
                         type: SyncMessages.deleteFile,
                         path: dbEntry.path,
@@ -277,6 +270,7 @@ export default class SyncCommunicator {
                         oldPath: dbEntry.oldPath,
                         current_cs: dbEntry.current_cs
                     }, (response) => this.onResponse(dbEntry, response));
+
                     break;
 
                 case SyncEvents.DELETE:
@@ -313,7 +307,7 @@ export default class SyncCommunicator {
                 break;
 
             case SyncActions.doNothingDir:
-                console.log('Sync response [FILE][DO_NOTHING_DIR]: ', dbEntry.path);
+                console.log('Sync response [DIR][DO_NOTHING_DIR]: ', dbEntry.path);
 
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
@@ -363,7 +357,7 @@ export default class SyncCommunicator {
             case SyncActions.streamFolder:
                 console.log('Sync response [DIR][STREAM_FOLDER]: ', dbEntry.path);
 
-                if(response.isConflict){
+                if (response.isConflict) {
                     const names = _.split(dbEntry.path, '/');
                     const newName = names[names.length] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
                     const newPath = _.replace(dbEntry.path, names[names.length - 1], newName);
@@ -379,14 +373,14 @@ export default class SyncCommunicator {
         }
     }
 
-    syncNewDirectory(sourcePath, targetPath) {
+    async syncNewDirectory(sourcePath, targetPath) {
         // TODO: Recheck for folder names with dots.
         const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
 
         this.socket.emit('action', {
             type: SyncActionMessages.newFolder,
             path: targetPath
-        }, () => {
+        }, async () => {
             const files = fs.readdirSync(fullSourcePath);
 
             for (let i = 0; i < files.length; i++) {
@@ -395,7 +389,7 @@ export default class SyncCommunicator {
                 const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, sourceItemPath);
 
                 if (fs.statSync(fullSourceItemPath).isDirectory()) {
-                    this.syncNewDirectory(sourceItemPath, targetItemPath);
+                    await this.syncNewDirectory(sourceItemPath, targetItemPath);
                 }
                 else {
                     let ws = this.socket.stream('file', {path: targetItemPath});

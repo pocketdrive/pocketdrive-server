@@ -5,10 +5,10 @@ import * as databases from './dbs';
 
 export default class ChecksumDBHandler {
 
-    static setChecksum(path, checksum) {
+    static async setChecksum(path, checksum) {
         let result = {success: false};
 
-        return new Promise((resolve) => {
+        await new Promise((resolve) => {
             databases.checkSumDB.update({path: path}, {
                 path: path,
                 synced_cs: checksum
