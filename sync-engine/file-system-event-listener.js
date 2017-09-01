@@ -31,7 +31,7 @@ export default class FileSystemEventListener {
 
     async start() {
         await MetadataDBHandler.getNextSequenceID().then((result) => {
-            this.sequence_id = result.data;
+            this.sequenceID = result.data;
         });
 
         this.addWatch(this.baseDirectory);

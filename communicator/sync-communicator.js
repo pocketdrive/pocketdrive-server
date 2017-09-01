@@ -303,19 +303,19 @@ export default class SyncCommunicator {
                 let writeStream = this.socket.stream('file', {path: dbEntry.path});
                 fs.createReadStream(fullPath).pipe(writeStream);
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.doNothingFile:
                 console.log('Sync response [FILE][DO_NOTHING_FILE]: ', dbEntry.path);
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.doNothingDir:
                 console.log('Sync response [FILE][DO_NOTHING_DIR]: ', dbEntry.path);
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.update:
@@ -336,7 +336,7 @@ export default class SyncCommunicator {
                 bufferStream.end(transmissionData);
                 bufferStream.pipe(writeStream);
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.conflict:
@@ -352,7 +352,7 @@ export default class SyncCommunicator {
 
                 let ws = this.socket.stream('file', {path: newPath}, (response) => {
                     console.log('Conflicted file copied : ' + response);
-                    deleteMetadataEntry(dbEntry.path);
+                    deleteMetadataEntry(dbEntry.sequence_id);
                     setSyncedChecksum(newPath, dbEntry.current_cs);
                 });
 
@@ -374,7 +374,7 @@ export default class SyncCommunicator {
                     this.syncNewDirectory(dbEntry.path, dbEntry.path)
                 }
 
-                afterSyncFile(dbEntry.path, dbEntry.current_cs);
+                afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
         }
     }

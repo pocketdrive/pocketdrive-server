@@ -139,6 +139,11 @@ export default class MetadataDBHandler {
         });
     }
 
+    static deleteEntryBySequenceId(sequenceID) {
+        databases.fileMetaDataDb.remove({sequence_id: sequenceID}, (err, numDeleted) => {
+        });
+    }
+
     static getUpdatedFilesOfUser(username) {
         let result = {success: false};
 

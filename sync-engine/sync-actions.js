@@ -56,16 +56,17 @@ export function isFolderEmpty(fullPath) {
     return !fs.readdirSync(fullPath).length;
 }
 
-export function afterSyncFile(path, syncedChecksum) {
-    deleteMetadataEntry(path);
+export function afterSyncFile(sequenceId, path, syncedChecksum) {
+    deleteMetadataEntry(sequenceId);
 
     if (arguments.length === 2) {
         setSyncedChecksum(path, syncedChecksum);
     }
 }
 
-export function deleteMetadataEntry(path) {
-    MetadataDBHandler.deleteEntry(path);
+export function deleteMetadataEntry(sequenceId) {
+    // MetadataDBHandler.deleteEntry(path);
+    MetadataDBHandler.deleteEntryBySequenceId(sequenceId);
 }
 
 export function setSyncedChecksum(path, syncedChecksum) {
