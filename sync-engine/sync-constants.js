@@ -31,5 +31,6 @@ export const SyncActions = {
     update: 'update',
     conflict: 'conflict',
     rename: 'rename',
-    delete: 'delete'
+    delete: 'delete',
+    streamFolder: 'streamFolder'
 };

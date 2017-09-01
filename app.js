@@ -8,7 +8,6 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 import * as _ from 'lodash';
 import fs from 'fs';
-import dir from 'node-dir';
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -21,6 +20,9 @@ const app = express();
 // import {Communicator} from './communicator/Communicator';
 
 // let cm = new Communicator();
+
+require('events').EventEmitter.defaultMaxListeners = Infinity;
+
 
 async function main() {
     // "use strict";
@@ -36,6 +38,8 @@ async function main() {
     // console.log(h2);
 
     // fs.renameSync('/home/dulaj/pocketdrive/dulaj/Documents/6', '/home/dulaj/pocketdrive/dulaj/Documents/5');
+
+    // communicator.syncNewDirectory('dulaj/Documents/CSE Semester 8', 'dulaj/Documents/1/CSE Semester 7');/
 
 }
 
@@ -57,7 +61,7 @@ async function syncTest() {
     // synchronizer.updateOldFile(transmit, '/home/dulaj/pocketdrive/dulaj/Documents/old.txt').then();
 
 
-    // syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
+    syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
     // syncRunner.scanMetadataDBForChanges('dulaj');
 
     /*MetadataDBHandler.getUpdatedFilesOfUser('dulaj').then((result) => {
