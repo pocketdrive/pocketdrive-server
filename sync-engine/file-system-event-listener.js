@@ -31,7 +31,7 @@ export default class FileSystemEventListener {
 
     async start() {
         await MetadataDBHandler.getNextSequenceID().then((result) => {
-            this.sequenceID = result.data;
+            this.sequence_id = result.data;
         });
 
         this.addWatch(this.baseDirectory);
@@ -90,7 +90,7 @@ export default class FileSystemEventListener {
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
                     current_cs: metaUtils.getCheckSum(fullPath),
-                    sequenceID: this.sequenceID++
+                    sequence_id: this.sequenceID++
                 });
 
                 console.log(type + ' modified: ' + fullPath);
@@ -111,7 +111,7 @@ export default class FileSystemEventListener {
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
                         current_cs: await getFolderChecksum(fullPath),
-                        sequenceID: this.sequenceID++
+                        sequence_id: this.sequenceID++
                     });
                 } else {
                     MetadataDBHandler.updateEntry(fullPath, {
@@ -121,7 +121,7 @@ export default class FileSystemEventListener {
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
                         current_cs: metaUtils.getCheckSum(fullPath),
-                        sequenceID: this.sequenceID++
+                        sequence_id: this.sequenceID++
                     });
                 }
 
@@ -157,7 +157,7 @@ export default class FileSystemEventListener {
                     path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                     type: type,
                     current_cs: current_cs,
-                    sequenceID: this.sequenceID++
+                    sequence_id: this.sequenceID++
                 });
 
                 console.log(type + ' Deleted: ' + fullPath);
@@ -190,7 +190,7 @@ export default class FileSystemEventListener {
                         type: type,
                         current_cs: await getFolderChecksum(fullPath),
                         oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
-                        sequenceID: this.sequenceID++
+                        sequence_id: this.sequenceID++
                     });
 
                     // MetadataDBHandler.updateMetadataForRenaming(oldPath, fullPath);
@@ -209,7 +209,7 @@ export default class FileSystemEventListener {
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             type: type,
                             current_cs: metaUtils.getCheckSum(fullPath),
-                            sequenceID: this.sequenceID++
+                            sequence_id: this.sequenceID++
                         });
 
                         console.log('File modified:' + fullPath);
@@ -223,7 +223,7 @@ export default class FileSystemEventListener {
                             path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                             oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
                             current_cs: metaUtils.getCheckSum(fullPath),
-                            sequenceID: this.sequenceID++
+                            sequence_id: this.sequenceID++
                         });
 
                         console.log('File renamed');

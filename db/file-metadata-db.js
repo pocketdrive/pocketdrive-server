@@ -143,7 +143,7 @@ export default class MetadataDBHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.fileMetaDataDb.find({user: username}).sort({sequenceID: 1}).exec((err, docs) => {
+            databases.fileMetaDataDb.find({user: username}).sort({sequence_id: 1}).exec((err, docs) => {
                 if (err) {
                     this.handleError(result, 'DB Error. Cannot read meta data', err);
                 } else {
@@ -161,12 +161,12 @@ export default class MetadataDBHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.fileMetaDataDb.find({}).sort({sequenceID: -1}).limit(1).exec((err, docs) => {
+            databases.fileMetaDataDb.find({}).sort({sequence_id: -1}).limit(1).exec((err, docs) => {
                 if (err) {
                     this.handleError(result, 'DB Error. Cannot get max sequenceID', err);
                 } else {
                     result.success = true;
-                    result.data = (docs && docs.length !== 0) ? docs[0].sequenceID + 1 : 0;
+                    result.data = (docs && docs.length !== 0) ? docs[0].sequence_id + 1 : 0;
                 }
 
                 resolve(result);
