@@ -356,23 +356,31 @@ export default class SyncCommunicator {
         }
     }
 
-    syncNewDirectory(sourcePath) {
+    syncNewDirectory(sourceBasePath, sourceFolderName, targetBasePath, targetFolderName) {
+        // TODO: Recheck for folder names with dots.
+        const sourcePath = path.join(sourceBasePath, sourceFolderName);
+        const targetPath = path.join(targetBasePath, targetFolderName);
+        const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
+
+        log(fullSourcePath);
+
         this.socket.emit('action', {
             type: SyncActionMessages.newFolder,
-            path: sourcePath
+            path: targetPath
         }, () => {
-            let fullPath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
-            const files = fs.readdirSync(fullPath);
+            const files = fs.readdirSync(fullSourcePath);
 
             for (let i = 0; i < files.length; i++) {
-                const itemPath = path.resolve(fullPath, files[i]);
+                const sourceItemPath = path.join(sourcePath, files[i]);
+                const targetItemPath = path.join(targetPath, files[i]);
+                const fullItemPath = path.resolve(process.env.PD_FOLDER_PATH, sourceItemPath);
 
-                if (fs.statSync(itemPath).isDirectory()) {
-                    this.syncNewDirectory(itemPath);
+                if (fs.statSync(fullItemPath).isDirectory()) {
+                    this.syncNewDirectory(sourcePath, files[i], targetPath, files[i]);
                 }
                 else {
-                    let ws = this.socket.stream('file', {path: sourcePath + file});
-                    fs.createReadStream(itemPath).pipe(ws);
+                    let ws = this.socket.stream('file', {path: targetItemPath});
+                    fs.createReadStream(fullItemPath).pipe(ws);
                 }
             }
         });
