@@ -54,11 +54,11 @@ export class ChunkBasedSynchronizer {
             // if no match found
             if (!matchFound) {
                 // need to update [new offset, new data]
-                new_data.push([n.offset, new_file.slice(n.offset, n.offset + n.length)]);
+                new_data.push([n.offset, new_file.slice(n.offset, n.offset + n.length).toString()]);
             }
         });
 
-        return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data.toString()}));
+        return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data}));
     }
 
     static async updateOldFile(transmissionData, oldFilePath) {
@@ -67,7 +67,9 @@ export class ChunkBasedSynchronizer {
         let existing_file = fs.readFileSync(`${oldFilePath}`);
         const dataJSON = JSON.parse(transmissionData.toString());
         let old_data = dataJSON.oldData;
-        let new_data = new Buffer.from(dataJSON.newData);
+        let new_data = _.map(dataJSON.newData, (dataArr) => {
+            return [dataArr[0], new Buffer.from(dataArr[1])]
+        });
 
         // merge changes to the new file
         while (old_data.length > 0 || new_data.length > 0) {
