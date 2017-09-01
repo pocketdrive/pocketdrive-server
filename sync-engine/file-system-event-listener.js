@@ -55,7 +55,7 @@ export default class FileSystemEventListener {
     }
 
     addWatch(directory) {
-        console.log('Added watch for ' + directory);
+        console.log('Add watch: ' + directory);
         const watch = {
             path: directory,
             watch_for: Inotify.IN_ALL_EVENTS,
@@ -103,15 +103,27 @@ export default class FileSystemEventListener {
             }
 
             if (!isTempFile) {
-                MetadataDBHandler.updateEntry(fullPath, {
-                    action: SyncEvents.NEW,
-                    user: this.username,
-                    deviceIDs: this.deviceIDs,
-                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                    type: type,
-                    current_cs: metaUtils.getCheckSum(fullPath),
-                    sequenceID: this.sequenceID++
-                });
+                if (isDirectory) {
+                    MetadataDBHandler.insertEntry({
+                        action: SyncEvents.NEW,
+                        user: this.username,
+                        deviceIDs: this.deviceIDs,
+                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                        type: type,
+                        current_cs: await getFolderChecksum(fullPath),
+                        sequenceID: this.sequenceID++
+                    });
+                } else {
+                    MetadataDBHandler.updateEntry(fullPath, {
+                        action: SyncEvents.NEW,
+                        user: this.username,
+                        deviceIDs: this.deviceIDs,
+                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
+                        type: type,
+                        current_cs: metaUtils.getCheckSum(fullPath),
+                        sequenceID: this.sequenceID++
+                    });
+                }
 
                 console.log('New ' + type + ' created: ' + fullPath);
             }
@@ -130,8 +142,8 @@ export default class FileSystemEventListener {
                     if (result.success && result.data.current_cs) {
                         current_cs = result.data.current_cs;
                     } else {
-                        await ChecksumDBHandler.getChecksum(this.username,_.replace(fullPath, process.env.PD_FOLDER_PATH, '')).then((result) => {
-                            if(result.success){
+                        await ChecksumDBHandler.getChecksum(this.username, _.replace(fullPath, process.env.PD_FOLDER_PATH, '')).then((result) => {
+                            if (result.success) {
                                 current_cs = result.data;
                             }
                         })
@@ -169,16 +181,19 @@ export default class FileSystemEventListener {
                 if (isDirectory) {
                     this.addWatch(fullPath);
 
+                    // Here we do insert not update since early CREATE event of the same folder should not be replaced by this event.
                     MetadataDBHandler.insertEntry({
                         action: SyncEvents.RENAME,
                         user: this.username,
                         deviceIDs: this.deviceIDs,
                         path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
                         type: type,
-                        current_cs: getFolderChecksum(fullPath),
+                        current_cs: await getFolderChecksum(fullPath),
                         oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
                         sequenceID: this.sequenceID++
                     });
+
+                    // MetadataDBHandler.updateMetadataForRenaming(oldPath, fullPath);
 
                     console.log('Directory Renamed:');
                     console.log('   Old path:' + oldPath);

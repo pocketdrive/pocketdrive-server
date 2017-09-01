@@ -105,11 +105,11 @@ export function getFileChecksum(fullPath) {
 export async function getFolderChecksum(fullPath) {
     let hash = '';
 
-    await hasher.hashElement(fullPath, {algo: 'md5'}).then(function (hashes) {
+/*    await hasher.hashElement(fullPath, {algo: 'md5'}).then(function (hashes) {
         _.each(hashes.children, (child) => {
             hash += child.hash;
         })
-    });
+    });*/
 
     return hasha(hash, {algorithm: 'md5'});
 }

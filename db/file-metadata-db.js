@@ -93,47 +93,21 @@ export default class MetadataDBHandler {
      *
      * @param oldPath - Old path of the renamed renamed item.
      * @param newPath - New path of the renamed renamed item.
-     * @param isDirectory - True if the item is a directory. Else false.
      */
-    static updateMetadataForRenaming(oldPath, newPath, isDirectory) {
-        const tempOldPath = _.replace(oldPath, process.env.PD_FOLDER_PATH, '');
-        const tempNewPath = _.replace(newPath, process.env.PD_FOLDER_PATH, '');
+    static updateMetadataForRenaming(oldPath, newPath) {
+        let regex = new RegExp(oldPath);
 
-        if (isDirectory) {
-            let regex = new RegExp(tempOldPath);
+        databases.fileMetaDataDb.find({path: {$regex: regex}}, (err, docs) => {
+            _.each(docs, (doc) => {
+                const newPath = (doc.path).replace(regex, newPath);
 
-            databases.fileMetaDataDb.find({path: {$regex: regex}}, (err, docs) => {
-                _.each(docs, (doc) => {
-                    const path = (doc.path).replace(regex, tempNewPath);
+                doc.oldPath = doc.path;
+                doc.path = newPath;
 
-                    databases.fileMetaDataDb.update({path: doc.path}, {
-                        $set: {
-                            action: 'RENAME',
-                            path: path,
-                            oldPath: doc.path
-                        }
-                    }, {upsert: true}, (err, numReplaced) => {
-                        if (!err) {
-                            console.log(numReplaced + " entries updated");
-                        }
-                    });
+                databases.fileMetaDataDb.update({path: doc.oldPath}, doc, {}, (err, numReplaced) => {
                 });
             });
-        }
-        else {
-            console.log('search key ', oldPath);
-            databases.fileMetaDataDb.update({path: tempOldPath}, {
-                $set: {
-                    action: 'RENAME',
-                    path: tempNewPath,
-                    oldPath: tempOldPath
-                }
-            }, {upsert: true}, (err, numReplaced) => {
-                if (!err) {
-                    console.log(numReplaced + " entries updated");
-                }
-            });
-        }
+        });
     }
 
     static removeFilesOfDeletedDirectory(fullPath) {

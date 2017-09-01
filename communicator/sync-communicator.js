@@ -315,7 +315,7 @@ export default class SyncCommunicator {
             case SyncActions.doNothingDir:
                 console.log('Sync response [FILE][DO_NOTHING_DIR]: ', dbEntry.path);
 
-                afterSyncFile(dbEntry.path);
+                afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.update:
@@ -373,6 +373,8 @@ export default class SyncCommunicator {
                 } else {
                     this.syncNewDirectory(dbEntry.path, dbEntry.path)
                 }
+
+                afterSyncFile(dbEntry.path, dbEntry.current_cs);
                 break;
         }
     }
