@@ -1,16 +1,16 @@
-import {Inotify} from 'inotify';
-import fs from 'fs';
+import {SyncEvents} from "./sync-constants";
+
+import fsmonitor from 'fsmonitor';
 import path from 'path';
 import * as _ from 'lodash';
 
-import {SyncEvents} from '../sync-engine/sync-constants';
-
 import MetadataDBHandler from '../db/file-metadata-db';
-import ChecksumDBHandler from "../db/checksum-db";
 import * as metaUtils from '../utils/meta-data';
 import {getFolderChecksum} from "./sync-actions";
 
-const inotify = new Inotify();
+const log = console.log;
+
+export const ChangeType = {FILE: 'FILE', DIR: 'DIR'};
 
 /**
  * @author Pamoda Wimalasiri
@@ -19,251 +19,155 @@ const inotify = new Inotify();
 export default class FileSystemEventListener {
 
     constructor(username, folder, deviceIDs) {
-        // TODO create directory by environment
-        // For each users sync directory start the watcher
         this.pdPath = process.env.PD_FOLDER_PATH;
         this.username = username;
         this.deviceIDs = deviceIDs;
-        this.baseDirectory = path.resolve(this.pdPath, username, folder);
+        this.folder = folder;
+
+        this.baseDirectory = path.resolve(this.pdPath, this.username, this.folder);
         this.hashtable = {};
         this.data = {};
     }
 
-    async start() {
-        await MetadataDBHandler.getNextSequenceID().then((result) => {
-            this.sequenceID = result.data;
+    start() {
+        // noinspection JSUnusedLocalSymbols
+        let monitor = fsmonitor.watch(this.baseDirectory, {
+            matches: function (relPath) {
+                return relPath.match(/(\/\.)|(\\\.)|^(\.)/) === null;
+            },
+            excludes: function (relPath) {
+                return false;
+            }
         });
 
-        this.addWatch(this.baseDirectory);
-        let directory_child = this.scanDirSync(this.baseDirectory);
-        if (directory_child.length !== 0) {
-            for (let i = 0, len = directory_child.length; i < len; i++) {
-                this.addWatch(directory_child[i]);
-            }
-        }
+        console.log('Add watch ', this.baseDirectory);
 
-        return this;
-    }
+        monitor.on('change', async (change) => {
+            // Change watcher relative paths to absolute paths
+            _.each(change, (changeList, changeListName) => {
+                _.each(changeList, (relativePath, index) => {
+                    change[changeListName][index] = path.join(this.baseDirectory, relativePath);
+                });
+            });
 
-    stop() {
-        for (let key in this.hashtable) {
-            if (this.hashtable.hasOwnProperty(key)) {
-                delete this.hashtable[key];
-                inotify.removeWatch(key);
-            }
-        }
-    }
+            if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
+                // Rename directory
+                console.log("Watcher [DIR][RENAME] ", change.removedFolders[0], ' --> ', change.addedFolders[0]);
 
-    addWatch(directory) {
-        console.log('Add watch: ' + directory);
-        const watch = {
-            path: directory,
-            watch_for: Inotify.IN_ALL_EVENTS,
-            callback: this.inotifyCallback.bind(this)
-        };
-
-        const watch_id = inotify.addWatch(watch);
-        this.hashtable[watch_id] = directory;
-
-    }
-
-    async inotifyCallback(event) {
-        let mask = event.mask;
-        let isDirectory = mask & Inotify.IN_ISDIR;
-        let isTempFile = false;
-        let fullPath, type;
-
-        if (event.name) {
-            isTempFile = ((event.name).startsWith('.'));
-        }
-
-        type = isDirectory ? 'dir' : 'file';
-        // event.name ? type += ' ' + event.name + ' ' : ' ';
-        fullPath = path.resolve(this.hashtable[event.watch], _.get(event, 'name', ''));
-
-        if (mask & Inotify.IN_MODIFY) {
-            if (!isTempFile) {
-                MetadataDBHandler.updateEntry(fullPath, {
-                    action: SyncEvents.MODIFY,
+                MetadataDBHandler.insertEntry({
+                    action: SyncEvents.RENAME,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                    type: type,
-                    current_cs: metaUtils.getCheckSum(fullPath),
+                    path: _.replace(change.addedFolders[0], process.env.PD_FOLDER_PATH, ''),
+                    type: ChangeType.DIR,
+                    current_cs: await getFolderChecksum(change.addedFolders[0]),
+                    oldPath: _.replace(change.removedFolders[0], process.env.PD_FOLDER_PATH, ''),
                     sequence_id: this.sequenceID++
                 });
 
-                console.log(type + ' modified: ' + fullPath);
-            }
+            } else if (change.addedFiles.length === 1 && change.removedFiles.length === 1) {
+                // Rename file
+                console.log("Watcher [FILE][RENAME] ", change.removedFiles[0], ' --> ', change.addedFiles[0]);
 
-        } else if (mask & Inotify.IN_CREATE) {
-            if (isDirectory) {
-                console.log('New directory for watch: ' + fullPath);
-                this.addWatch(fullPath);
-            }
+                MetadataDBHandler.updateEntry(change.addedFiles[0], {
+                    action: SyncEvents.RENAME,
+                    user: this.username,
+                    deviceIDs: this.deviceIDs,
+                    type: ChangeType.FILE,
+                    path: _.replace(change.addedFiles[0], process.env.PD_FOLDER_PATH, ''),
+                    oldPath: _.replace(change.removedFiles[0], process.env.PD_FOLDER_PATH, ''),
+                    current_cs: metaUtils.getCheckSum(change.addedFiles[0]),
+                    sequence_id: this.sequenceID++
+                });
 
-            if (!isTempFile) {
-                if (isDirectory) {
+            } else {
+                // New directory
+                for (let i = 0; i < change.addedFolders.length; i++) {
+                    console.log("Watcher [DIR][NEW] ", change.addedFolders[i]);
+
                     MetadataDBHandler.insertEntry({
                         action: SyncEvents.NEW,
                         user: this.username,
                         deviceIDs: this.deviceIDs,
-                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                        type: type,
-                        current_cs: await getFolderChecksum(fullPath),
+                        path: _.replace(change.addedFolders[i], process.env.PD_FOLDER_PATH, ''),
+                        type: ChangeType.DIR,
+                        current_cs: await getFolderChecksum(change.addedFolders[i]),
                         sequence_id: this.sequenceID++
                     });
-                } else {
-                    MetadataDBHandler.updateEntry(fullPath, {
+                }
+
+                // New file
+                for (let i = 0; i < change.addedFiles.length; i++) {
+                    console.log("Watcher [FILE][NEW] ", change.addedFiles[i]);
+
+                    MetadataDBHandler.updateEntry(change.addedFiles[i], {
                         action: SyncEvents.NEW,
                         user: this.username,
                         deviceIDs: this.deviceIDs,
-                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                        type: type,
-                        current_cs: metaUtils.getCheckSum(fullPath),
+                        path: _.replace(change.addedFiles[i], process.env.PD_FOLDER_PATH, ''),
+                        type: ChangeType.FILE,
+                        current_cs: metaUtils.getCheckSum(change.addedFiles[i]),
                         sequence_id: this.sequenceID++
                     });
                 }
 
-                console.log('New ' + type + ' created: ' + fullPath);
-            }
+                // Delete files
+                for (let i = 0; i < change.removedFiles.length; i++) {
+                    console.log("Watch [FILE][DELETE] ", change.removedFiles[i]);
 
-        } else if (mask & Inotify.IN_DELETE) {
-            // TODO: Only shift delete works
-            if (isDirectory) {
-                this.deleteFromHashTableByDirectory(fullPath);
-                MetadataDBHandler.removeFilesOfDeletedDirectory(fullPath);
-            }
-
-            if (!isTempFile) {
-                let current_cs = '';
-
-                await MetadataDBHandler.readEntry(fullPath).then(async (result) => {
-                    if (result.success && result.data.current_cs) {
-                        current_cs = result.data.current_cs;
-                    } else {
-                        await ChecksumDBHandler.getChecksum(this.username, _.replace(fullPath, process.env.PD_FOLDER_PATH, '')).then((result) => {
-                            if (result.success) {
-                                current_cs = result.data;
-                            }
-                        })
-                    }
-                });
-
-                MetadataDBHandler.updateEntry(fullPath, {
-                    action: SyncEvents.DELETE,
-                    user: this.username,
-                    deviceIDs: this.deviceIDs,
-                    path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                    type: type,
-                    current_cs: current_cs,
-                    sequence_id: this.sequenceID++
-                });
-
-                console.log(type + ' Deleted: ' + fullPath);
-            }
-
-        } else if (mask & Inotify.IN_MOVED_FROM) {
-            this.data = event;
-            this.data.type = type;
-            this.data.path = fullPath;
-
-            if (isTempFile) {
-                this.data.temp = true;
-            }
-
-        } else if (mask & Inotify.IN_MOVED_TO) {
-            if (Object.keys(this.data).length &&
-                this.data.cookie === event.cookie) {
-
-                let oldPath = this.data.path;
-
-                if (isDirectory) {
-                    this.addWatch(fullPath);
-
-                    // Here we do insert not update since early CREATE event of the same folder should not be replaced by this event.
-                    MetadataDBHandler.insertEntry({
-                        action: SyncEvents.RENAME,
+                    MetadataDBHandler.updateEntry(change.removedFiles[i], {
+                        action: SyncEvents.DELETE,
                         user: this.username,
                         deviceIDs: this.deviceIDs,
-                        path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                        type: type,
-                        current_cs: await getFolderChecksum(fullPath),
-                        oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
+                        path: _.replace(change.removedFiles[i], process.env.PD_FOLDER_PATH, ''),
+                        type: ChangeType.FILE,
                         sequence_id: this.sequenceID++
                     });
-
-                    // MetadataDBHandler.updateMetadataForRenaming(oldPath, fullPath);
-
-                    console.log('Directory Renamed:');
-                    console.log('   Old path:' + oldPath);
-                    console.log('   New path:' + fullPath);
-
                 }
-                else {
-                    if (this.data.temp) {
-                        MetadataDBHandler.updateEntry(fullPath, {
-                            action: SyncEvents.MODIFY,
-                            user: this.username,
-                            deviceIDs: this.deviceIDs,
-                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                            type: type,
-                            current_cs: metaUtils.getCheckSum(fullPath),
-                            sequence_id: this.sequenceID++
-                        });
 
-                        console.log('File modified:' + fullPath);
+                // Delete directories
+                for (let i = 0; i < (change.removedFolders).length; i++) {
+                    console.log("Watch [DIR][DELETE] ", change.removedFolders[i]);
 
-                    } else {
-                        MetadataDBHandler.updateEntry(oldPath, {
-                            action: SyncEvents.RENAME,
-                            user: this.username,
-                            deviceIDs: this.deviceIDs,
-                            type: type,
-                            path: _.replace(fullPath, process.env.PD_FOLDER_PATH, ''),
-                            oldPath: _.replace(oldPath, process.env.PD_FOLDER_PATH, ''),
-                            current_cs: metaUtils.getCheckSum(fullPath),
-                            sequence_id: this.sequenceID++
-                        });
+                    MetadataDBHandler.updateEntry(change.removedFolders[i], {
+                        action: SyncEvents.DELETE,
+                        user: this.username,
+                        deviceIDs: this.deviceIDs,
+                        path: _.replace(change.removedFolders[i], process.env.PD_FOLDER_PATH, ''),
+                        type: ChangeType.DIR,
+                        sequence_id: this.sequenceID++
+                    });
+                }
 
-                        console.log('File renamed');
-                        console.log('   Old path:' + oldPath);
-                        console.log('   New path:' + fullPath);
+
+                // Modify file
+                for (let i = 0; i < (change.modifiedFiles).length; i++) {
+                    console.log("Watch [FILE][MODIFY]  ", change.modifiedFiles[i]);
+
+                    MetadataDBHandler.updateEntry(change.modifiedFiles[i], {
+                        action: SyncEvents.MODIFY,
+                        user: this.username,
+                        deviceIDs: this.deviceIDs,
+                        path: _.replace(change.modifiedFiles[i], process.env.PD_FOLDER_PATH, ''),
+                        type: ChangeType.FILE,
+                        current_cs: metaUtils.getCheckSum(change.modifiedFiles[i]),
+                        sequence_id: this.sequenceID++
+                    });
+                }
+
+                /*//handle dir modifications
+                if ((change.modifiedFolders).length > 0) {
+                    for (let i = 0; i < (change.modifiedFolders).length; i++) {
+                        console.log("DIR MODIFIED ", change.modifiedFolders[i]);
+                        // TODO : dir modify make DB entry
+                        let entry = {
+                            action: "MODIFY",
+                            type: "dir",
+                            path: change.modifiedFolders[i]
+                        };
                     }
-                }
-
-                this.data = {};
+                }*/
             }
-        }
+        });
     }
-
-    scanDirSync(directory) {
-        let files = fs.readdirSync(directory);
-        let directories = [];
-        for (let file in files) {
-
-            if (!files.hasOwnProperty(file)) {
-                continue;
-            }
-
-            let name = path.normalize(directory + '/' + files[file]);
-
-            if (fs.statSync(name).isDirectory()) {
-                directories.push(name);
-                directories = directories.concat(this.scanDirSync(name));
-            }
-        }
-        return directories;
-    }
-
-    deleteFromHashTableByDirectory(directory) {
-        for (let key in this.hashtable) {
-            if (this.hashtable.hasOwnProperty(key)) {
-                if (this.hashtable[key] === directory) {
-                    delete this.hashtable[key];
-                }
-            }
-        }
-    }
-
 }

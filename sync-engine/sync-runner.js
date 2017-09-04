@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 
 import MetadataDBHandler from '../db/file-metadata-db';
 import SyncDbHandler from '../db/sync-db';
-import FileSystemEventListener from '../sync-engine/file-system-event-listener';
+import FileSystemEventListener from './file-system-event-listener';
 
 /**
  * @author Dulaj Atapattu
@@ -63,8 +63,6 @@ export class SyncRunner {
     }
 
     onAddNewSyncDirectory(username, folderName) {
-        // TODO: Rethink about this.
-        // this.metaDbHandler.addNewFolder(username, folderName);
         if(!this.eventListeners[username]){
             this.eventListeners[username] = [];
         }

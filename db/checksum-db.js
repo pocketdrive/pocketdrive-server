@@ -32,8 +32,6 @@ export default class ChecksumDBHandler {
                     this.handleError(result, 'Database error. Cannot read checksum', err);
                 } else {
                     result.success = true;
-
-                    //TODO: when doc = null '' or null?
                     result.data = doc ? doc.synced_cs : '';
                 }
 

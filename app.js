@@ -60,7 +60,7 @@ async function syncTest() {
     //
     // synchronizer.updateOldFile(transmit, '/home/dulaj/pocketdrive/dulaj/Documents/old.txt').then();
 
-    // syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
+    syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
 
     // syncRunner.scanMetadataDBForChanges('dulaj');
 

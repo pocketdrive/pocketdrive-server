@@ -103,7 +103,7 @@ export default class SyncCommunicator {
                     if (syncActions.checkExistence(fullPath)) {
                         const currentChecksum = getFileChecksum(fullPath);
 
-                        if (json.current_cs === currentChecksum || json.synced_cs === currentChecksum) {
+                        if (json.synced_cs === currentChecksum) {
                             fs.unlinkSync(fullPath);
                         }
                     }
