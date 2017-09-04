@@ -47,6 +47,8 @@ export class Communicator {
                         break;
                     case wsm.connectionOffer:
                         this.createPeerForSending(obj);
+                    case wsm.webConsoleRelay:
+                        console.log('Web Console',obj);
                 }
             });
         });
@@ -124,5 +126,9 @@ export class Communicator {
                 attemptCount++;
             }, 500);
         });
+    }
+
+    async performWebConsoleTask() {
+
     }
 }
