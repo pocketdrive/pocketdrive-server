@@ -139,7 +139,6 @@ export default class FileSystemEventListener {
                     });
                 }
 
-
                 // Modify file
                 for (let i = 0; i < (change.modifiedFiles).length; i++) {
                     console.log("Watch [FILE][MODIFY]  ", change.modifiedFiles[i]);
@@ -155,18 +154,6 @@ export default class FileSystemEventListener {
                     });
                 }
 
-                /*//handle dir modifications
-                if ((change.modifiedFolders).length > 0) {
-                    for (let i = 0; i < (change.modifiedFolders).length; i++) {
-                        console.log("DIR MODIFIED ", change.modifiedFolders[i]);
-                        // TODO : dir modify make DB entry
-                        let entry = {
-                            action: "MODIFY",
-                            type: "dir",
-                            path: change.modifiedFolders[i]
-                        };
-                    }
-                }*/
             }
         });
     }

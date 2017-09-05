@@ -6,8 +6,6 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-import * as _ from 'lodash';
-import fs from 'fs';
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -17,33 +15,23 @@ const ssdp = require('./utils/ssdp');
 
 const app = express();
 
-// import {Communicator} from './communicator/Communicator';
-
-// let cm = new Communicator();
-
 require('events').EventEmitter.defaultMaxListeners = Infinity;
 
-
 async function main() {
-    // "use strict";
-    // await cm.connectToCentralServer('anuradha', 'device1234');
-    // await cm.requestOnlineDevices();
+     /*"use strict";
+    await cm.connectToCentralServer('anuradha', 'device1234');
+    await cm.requestOnlineDevices();*/
 
     ssdp.broadcast();
-
-    // let h1 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/1');
-    // let h2 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/2');
-    //
-    // console.log(h1);
-    // console.log(h2);
-
-    // fs.renameSync('/home/dulaj/pocketdrive/dulaj/Documents/6', '/home/dulaj/pocketdrive/dulaj/Documents/5');
-
-    // communicator.syncNewDirectory('dulaj/Documents/CSE Semester 8', 'dulaj/Documents/1/CSE Semester 7');/
-
 }
 
 main();
+
+import * as _ from 'lodash';
+import fs from 'fs';
+// import {Communicator} from './communicator/Communicator';
+
+// let cm = new Communicator();
 
 import {ChunkBasedSynchronizer} from './sync-engine/chunk-based-synchronizer'
 import {SyncRunner} from './sync-engine/sync-runner'
@@ -79,6 +67,16 @@ async function syncTest() {
     console.log('t: ', t);
 
     ChunkBasedSynchronizer.updateOldFile(t, '/home/dulaj/pocketdrive/dulaj/Documents/2.txt');*/
+
+    // let h1 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/1');
+    // let h2 = await getFolderChecksum('/home/dulaj/pocketdrive/dulaj/Documents/2');
+    //
+    // console.log(h1);
+    // console.log(h2);
+
+    // fs.renameSync('/home/dulaj/pocketdrive/dulaj/Documents/6', '/home/dulaj/pocketdrive/dulaj/Documents/5');
+
+    // communicator.syncNewDirectory('dulaj/Documents/CSE Semester 8', 'dulaj/Documents/1/CSE Semester 7');/
 
 }
 
