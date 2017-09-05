@@ -17,9 +17,13 @@ const ssdp = require('./utils/ssdp');
 
 const app = express();
 
-// import {Communicator} from './communicator/Communicator';
+import {Communicator} from './communicator/Communicator';
+import FileExplorer from './web-file-explorer-backend/file-explorer';
 
-// let cm = new Communicator();
+const ans = FileExplorer.list('anuradha', '/');
+// console.log(ans)
+
+let cm = new Communicator();
 
 require('events').EventEmitter.defaultMaxListeners = Infinity;
 
@@ -32,54 +36,13 @@ async function main() {
 
 main();
 
-import {ChunkBasedSynchronizer} from './sync-engine/chunk-based-synchronizer'
-import {SyncRunner} from './sync-engine/sync-runner'
-import MetadataDBHandler from "./db/file-metadata-db";
 
-const syncRunner = new SyncRunner();
-const communicator = new SyncCommunicator('dulaj', '127.0.0.1', 5000);
-
-async function syncTest() {
-    // "use strict";
-    // let oldChunks = await synchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/old.txt');
-    // let newChunks = await synchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/new.txt');
-    // let transmit = await synchronizer.getTransmissionData(oldChunks, newChunks, fs.readFileSync('/home/dulaj/pocketdrive/dulaj/Documents/new.txt'));
-    //
-    // synchronizer.updateOldFile(transmit, '/home/dulaj/pocketdrive/dulaj/Documents/old.txt').then();
-
-    syncRunner.onAddNewSyncDirectory('dulaj', 'Documents');
-
-    // syncRunner.scanMetadataDBForChanges('dulaj');
-
-    /*MetadataDBHandler.getUpdatedFilesOfUser('dulaj').then((result) => {
-        for (let i = 0; i < result.data.length; i++) {
-            communicator.sendSyncRequest(result.data[i]);
-        }
-    });*/
-
-    /*const o = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2.txt');
-    const n = await ChunkBasedSynchronizer.getChecksumOfChunks('/home/dulaj/pocketdrive/dulaj/Documents/2-1.txt');
-    const t = await ChunkBasedSynchronizer.getTransmissionData(o, n, fs.readFileSync('/home/dulaj/pocketdrive/dulaj/Documents/2-1.txt'));
-
-    console.log('o: ', o);
-    console.log('n: ', n);
-    console.log('t: ', t);
-
-    ChunkBasedSynchronizer.updateOldFile(t, '/home/dulaj/pocketdrive/dulaj/Documents/2.txt');*/
-
-}
-
-syncTest();
-
-import DataStore from 'nedb';
-import {checkExistence, getFileChecksum, getFolderChecksum, isFolderEmpty} from "./sync-engine/sync-actions";
-import {getCheckSum} from "./utils/meta-data";
 // view engine setup
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'jade');
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
 
 // uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+// app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 app.use(logger('dev'));
 app.use(bodyParser.json());

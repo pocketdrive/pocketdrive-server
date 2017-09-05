@@ -1,70 +1,47 @@
-
-import express from 'express';
-import mime from 'mime';
-import Promise from 'bluebird';
 import fs from 'fs';
 import path from 'path';
-import multer from 'multer';
-var routes = express.Router();
-import dateformat from '../web-file-explorer-backend/dateformat';
-import pathResolver from '../web-file-explorer-backend/pathresolver';
+import * as _ from 'lodash';
 
-export default class FileExplorer{
+import {dateToString} from '../web-file-explorer-backend/dateformat';
+import * as pathResolver from '../web-file-explorer-backend/pathresolver';
 
-    list(path){
+export default class FileExplorer {
 
-        var promise;
-        var self = this;
-        let folderpath = process.env.PD_FOLDER_PATH + req.username;
-        var fsPath = path.join(folderpath, pathResolver.pathGuard(path));
+    static list(username, folderPath) {
 
-        promise = fs.statAsync(fsPath).then(function (stats) {
+        try {
+            const fsPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(folderPath))
+            const stats = fs.statSync(fsPath);
             if (!stats.isDirectory()) {
                 throw new Error("Directory " + fsPath + ' does not exist!');
             }
-        });
 
-        promise = promise.then(function () {
-            return fs.readdirAsync(fsPath);
-        });
+            const fileNames = fs.readdirSync(fsPath);
+            let filePath, stat;
 
-        promise = promise.then(function (fileNames) {
-
-            return Promise.map(fileNames, function (fileName) {
-
-                var filePath = path.join(fsPath, pathResolver.pathGuard(fileName));
-
-                return fs.statAsync(filePath).then(function (stat) {
-
-                    return {
-                        name: fileName,
-                        // rights: "Not Implemented", // TODO
-                        rights: "drwxr-xr-x",
-                        size: stat.size,
-                        date: dateformat.dateToString(stat.mtime),
-                        type: stat.isDirectory() ? 'dir' : 'file',
-                    };
-                });
+            const files = _.map(fileNames, (fileName) => {
+                filePath = path.join(fsPath, pathResolver.pathGuard(fileName));
+                stat = fs.statSync(filePath);
+                return {
+                    name: fileName,
+                    // rights: "Not Implemented", // TODO
+                    rights: "drwxr-xr-x",
+                    size: stat.size,
+                    date: dateToString(stat.mtime),
+                    type: stat.isDirectory() ? 'dir' : 'file',
+                };
             });
-        });
 
-        promise = promise.then(function (files) {
-            res.status(200);
-            res.send({
+            return {
                 "result": files
-            });
-        });
-
-        promise = promise.catch(function (err) {
-            res.status(500);
-            res.send({
+            };
+        } catch (e) {
+            return {
                 "result": {
                     "success": false,
-                    "error": err
+                    "error": e
                 }
-            });
-        });
-
-        return promise;
+            };
+        }
     }
 }

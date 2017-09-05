@@ -8,6 +8,7 @@ import {centralServer, centralServerWSPort} from '../config';
 import * as wsm from './ws-messages';
 import PDPeer from './pd-peer';
 import PeerCommunicator from './peer-communicator';
+import FileExplorer from '../web-file-explorer-backend/file-explorer';
 
 const ws = new WebSocket(`ws://${centralServer}:${centralServerWSPort}`);
 const sampleMessage = {type: ''};
@@ -47,8 +48,10 @@ export class Communicator {
                         break;
                     case wsm.connectionOffer:
                         this.createPeerForSending(obj);
+                        break;
                     case wsm.webConsoleRelay:
-                        console.log('Web Console',obj);
+                        this.performWebConsoleTask(obj, ws);
+                        break;
                 }
             });
         });
@@ -128,7 +131,16 @@ export class Communicator {
         });
     }
 
-    async performWebConsoleTask() {
-
+    async performWebConsoleTask(obj, ws) {
+        switch(obj.message.message.action){
+            case 'list':
+                const out = _.cloneDeep(sampleMessage);
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.list(obj.message.toName,obj.message.message.path).result;
+                ws.send(JSON.stringify(out));
+                break;
+        }
     }
 }
