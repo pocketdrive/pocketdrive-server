@@ -192,6 +192,32 @@ export class Communicator {
                 ).result;
                 ws.send(JSON.stringify(out));
                 break;
+            case 'compress':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.compress(
+                    obj.message.toName,
+                    obj.message.message.items,
+                    obj.message.message.destination,
+                    obj.message.message.compressedFilename
+                ).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'extract':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                FileExplorer.extract(
+                    obj.message.toName,
+                    obj.message.message.item,
+                    obj.message.message.destination,
+                    obj.message.message.folderName
+                ).then((data) => {
+                    out['result'] = data.result;
+                    ws.send(JSON.stringify(out));
+                });
+                break;
         }
     }
 }

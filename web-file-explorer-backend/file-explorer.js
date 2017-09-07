@@ -1,6 +1,9 @@
 import fs from 'fs';
+import * as fse from 'fs-extra';
 import path from 'path';
 import * as _ from 'lodash';
+import archiver from 'archiver';
+import decompress from 'decompress';
 
 import {dateToString} from '../web-file-explorer-backend/dateformat';
 import * as pathResolver from '../web-file-explorer-backend/pathresolver';
@@ -69,13 +72,13 @@ export default class FileExplorer {
         _.each(filePaths, (path) => {
             try {
                 if (fs.statSync(path).isDirectory()) {
-                    fs.rmdirSync(path);
+                    fse.removeSync(path);
                 } else {
                     fs.unlinkSync(path);
                 }
             } catch (e) {
-                console.log(e)
                 error = true;
+                errorMessage = e;
             }
         });
 
@@ -234,6 +237,92 @@ export default class FileExplorer {
                 }
             };
         }
+    }
+
+    static compress(username, items, targetPath, targetName) {
+        const itemPaths = _.map(items, (item) => {
+            return path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(item));
+        });
+
+        let targetPathName = path.join(process.env.PD_FOLDER_PATH, username, targetPath, pathResolver.pathGuard(targetName));
+        let writeSteamName = targetPathName;
+        let error = false;
+        let errorMessage = null;
+
+        if (_.isEmpty(path.basename(targetPathName).match(/[.]zip$/))) {
+            writeSteamName = `${targetPathName}.zip`;
+        }
+
+        try {
+            const output = fs.createWriteStream(writeSteamName);
+            const archive = archiver('zip', {
+                zlib: {level: 1} // Set for best speed compression for better UX
+            });
+
+            archive.pipe(output);
+
+            _.each(itemPaths, (itemPath) => {
+                if (fs.statSync(itemPath).isDirectory()) {
+                    archive.directory(itemPath, path.basename(targetPathName));
+                } else {
+                    archive.file(itemPath, {name: path.basename(itemPath)});
+                }
+            });
+
+            archive.finalize();
+        } catch (e) {
+            error = true;
+            errorMessage = e;
+        }
+
+        if (error) {
+            return {
+                "result": {
+                    "success": false,
+                    "error": errorMessage
+                }
+            };
+        } else {
+            return {
+                "result": {
+                    "success": true,
+                    "error": null
+                }
+            };
+        }
+    }
+
+    static extract(username, item, destination, folderName) {
+        const zipPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(item));
+        const destinationPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(destination));
+
+        let error = false;
+        let errorMessage = null;
+
+        try {
+            decompress(zipPath, path.join(destinationPath, folderName))
+        } catch (e) {
+            error = true;
+            errorMessage = e;
+        }
+
+        return new Promise((resolve) => {
+            if (error) {
+                resolve({
+                    "result": {
+                        "success": false,
+                        "error": errorMessage
+                    }
+                });
+            } else {
+                resolve({
+                    "result": {
+                        "success": true,
+                        "error": null
+                    }
+                });
+            }
+        });
     }
 
     static copyHelper(source, target, name) {
