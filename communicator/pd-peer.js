@@ -87,7 +87,7 @@ export default class PDPeer {
         });
     }
 
-    async sendBuffer(buffer, type = null, data = null) {
+    async sendBuffer(buffer, type = null, data = null, callback = null) {
         let file = buffer;
         let i = 0;
         let metaObj = {
@@ -116,6 +116,7 @@ export default class PDPeer {
         metaObj.eof = true;
         metaObj.sof = false;
         this.peerObj.send(JSON.stringify(metaObj));
+        callback && callback();
         this.currentSendProgress = 0;
     }
 

@@ -4,6 +4,8 @@
 import fs from 'fs';
 import path from 'path';
 import * as _ from 'lodash';
+import archiver from 'archiver';
+import uuid from 'uuid/v4';
 
 import ShareLinkDbHandler from '../db/share-link-db';
 import * as pm from './peer-messages';
@@ -46,7 +48,11 @@ export default class PeerCommunicator {
                 let obj = JSON.parse(messageBuffer.toString());
                 switch (obj.type) {
                     case pm.linkShare:
-                        localThis.sendLinkedFile(obj.username, obj.fileId);
+                        if (obj.mode === 'linkShare') {
+                            localThis.sendLinkedFile(obj.username, obj.fileId);
+                        } else if (obj.mode === 'fileOpen') {
+                            localThis.sendFileFromPath(obj.username, obj.path, obj.isMultiPath);
+                        }
                         break;
                 }
             } else {
@@ -78,11 +84,67 @@ export default class PeerCommunicator {
         });
     }
 
-    async messageToPeer(buffer, type, data) {
+    async sendFileFromPath(username, file, isMulti) {
+        let filePath;
+
+        if (isMulti) {
+            filePath = _.map(file, (fileName) => {
+                return path.join(process.env.PD_FOLDER_PATH, username, fileName);
+            });
+            const tempName = `tmp-${uuid()}.zip`;
+            const output = fs.createWriteStream(tempName);
+            const archive = archiver('zip', {
+                zlib: {level: 1} // Set for best speed compression for better UX
+            });
+
+            archive.on('error', (err) => {
+                let msg = _.cloneDeep(pm.peerMessageError);
+
+                msg.error = 'File could not be found';
+                msg.message = 'Please try again later';
+                this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
+            });
+
+            output.on('close', () => {
+                let msg = _.cloneDeep(pm.linkShareData);
+
+                msg.fileName = tempName;
+                this.messageToPeer(fs.readFileSync(tempName), pm.type.file, msg, () => {
+                    fs.unlinkSync(tempName)
+                });
+            });
+
+            archive.pipe(output);
+
+            _.each(filePath, (itemPath) => {
+                archive.file(itemPath, {name: path.basename(itemPath)});
+            });
+
+            archive.finalize();
+        } else {
+            filePath = path.join(process.env.PD_FOLDER_PATH, username, file);
+
+            try {
+                let msg = _.cloneDeep(pm.linkShareData);
+                msg.fileName = path.basename(file);
+
+
+                this.messageToPeer(fs.readFileSync(filePath), pm.type.file, msg);
+            } catch (e) {
+                let msg = _.cloneDeep(pm.peerMessageError);
+
+                msg.error = 'File could not be found';
+                msg.message = 'Please try again later';
+                this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
+            }
+        }
+    }
+
+    async messageToPeer(buffer, type, data, callback) {
         if (!this.peerObject.isConnected()) {
             await this.waitForConnection();
         }
-        this.peerObject.sendBuffer(buffer, type, data);
+        this.peerObject.sendBuffer(buffer, type, data, callback);
     }
 }
 
