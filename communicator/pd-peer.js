@@ -12,7 +12,8 @@ const options = {
     config: {
         iceServers: [
             {url: 'stun:stun.l.google.com:19302'},
-            {url: 'turn:anuradha@192.248.8.242:3478', username: 'anuradha', credential: 'sanjeewa'}
+            {url: 'turn:192.158.29.39:3478?transport=tcp', username: '28224511:1379330808', credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA='},
+            {url: 'turn:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc'}
         ]
     },
     constraints: {},
