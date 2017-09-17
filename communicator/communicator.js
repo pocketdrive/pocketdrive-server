@@ -132,14 +132,91 @@ export class Communicator {
     }
 
     async performWebConsoleTask(obj, ws) {
-        switch(obj.message.message.action){
+        console.log(obj);
+        const out = _.cloneDeep(sampleMessage);
+        switch (obj.message.message.action) {
             case 'list':
-                const out = _.cloneDeep(sampleMessage);
                 out.type = 'webConsoleRelay';
                 out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
-                out['result'] = FileExplorer.list(obj.message.toName,obj.message.message.path).result;
+                out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path).result;
                 ws.send(JSON.stringify(out));
+                break;
+            case 'remove':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.remove(obj.message.toName, obj.message.message.items).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'rename':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.rename(
+                    obj.message.toName,
+                    obj.message.message.item,
+                    obj.message.message.newItemPath).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'copy':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.copy(
+                    obj.message.toName,
+                    obj.message.message.items,
+                    obj.message.message.newPath,
+                    obj.message.message.singleFilename
+                ).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'move':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.move(
+                    obj.message.toName,
+                    obj.message.message.items,
+                    obj.message.message.newPath,
+                ).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'createFolder':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.createFolder(
+                    obj.message.toName,
+                    obj.message.message.newPath
+                ).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'compress':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                out['result'] = FileExplorer.compress(
+                    obj.message.toName,
+                    obj.message.message.items,
+                    obj.message.message.destination,
+                    obj.message.message.compressedFilename
+                ).result;
+                ws.send(JSON.stringify(out));
+                break;
+            case 'extract':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                FileExplorer.extract(
+                    obj.message.toName,
+                    obj.message.message.item,
+                    obj.message.message.destination,
+                    obj.message.message.folderName
+                ).then((data) => {
+                    out['result'] = data.result;
+                    ws.send(JSON.stringify(out));
+                });
                 break;
         }
     }

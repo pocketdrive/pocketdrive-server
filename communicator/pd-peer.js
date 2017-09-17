@@ -12,7 +12,8 @@ const options = {
     config: {
         iceServers: [
             {url: 'stun:stun.l.google.com:19302'},
-            {url: 'turn:anuradha@192.248.8.242:3478', username: 'anuradha', credential: 'sanjeewa'}
+            {url: 'turn:192.158.29.39:3478?transport=tcp', username: '28224511:1379330808', credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA='},
+            {url: 'turn:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc'}
         ]
     },
     constraints: {},
@@ -87,7 +88,7 @@ export default class PDPeer {
         });
     }
 
-    async sendBuffer(buffer, type = null, data = null) {
+    async sendBuffer(buffer, type = null, data = null, callback = null) {
         let file = buffer;
         let i = 0;
         let metaObj = {
@@ -116,6 +117,7 @@ export default class PDPeer {
         metaObj.eof = true;
         metaObj.sof = false;
         this.peerObj.send(JSON.stringify(metaObj));
+        callback && callback();
         this.currentSendProgress = 0;
     }
 

@@ -3,16 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon --exec babel-node --plugins transform-class-properties --presets es2015 ./bin/www"
+    "start": "nodemon --exec babel-node --plugins transform-class-properties --presets es2015 ./bin/www",
+    "test": "./node_modules/.bin/forever start -c babel-node --plugins transform-class-properties --presets es2015 ./bin/www"
   },
   "dependencies": {
+    "archiver": "^2.0.3",
     "body-parser": "~1.17.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.3",
+    "decompress": "^4.2.0",
     "dotenv": "^4.0.0",
     "express": "~4.15.2",
     "fast-tcp": "^3.3.2",
     "folder-hash": "^1.1.1",
+    "forever": "^0.15.3",
+    "fs-extra": "^4.0.1",
     "fsmonitor": "^0.2.4",
     "get-folder-size": "^1.0.0",
     "hasha": "^3.0.0",
