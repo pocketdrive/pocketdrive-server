@@ -7,7 +7,6 @@ import * as _ from 'lodash';
 
 import {SyncMessages, SyncActions, SyncActionMessages, SyncEvents} from '../sync-engine/sync-constants';
 import * as syncActions from '../sync-engine/sync-actions';
-import ChecksumDBHandler from "../db/checksum-db";
 import {modifyExistingFile} from "../sync-engine/sync-actions";
 import {createOrModifyFile} from "../sync-engine/sync-actions";
 import {getFileChecksum} from "../sync-engine/sync-actions";
@@ -28,8 +27,6 @@ const log = console.log;
  * @author Dulaj Atapattu
  */
 export default class SyncCommunicator {
-    username;
-    csDBHandler;
     sockObject;
     server;
 
@@ -37,11 +34,7 @@ export default class SyncCommunicator {
     clientIP;
     clientPort;
 
-    constructor(username, clientIP, clientPort) {
-        this.username = username;
-        this.clientIP = clientIP;
-        this.clientPort = clientPort;
-
+    constructor() {
         // Initialize server to listen for incoming messages
         this.server = new Server();
         this.server.on('connection', (socket) => {
@@ -50,19 +43,11 @@ export default class SyncCommunicator {
             console.log('socket connected')
         });
         this.server.listen(5000);
-
-        // Initialize socket connection to send messages
-        /*this.socket = new Socket({
-            host: this.clientIP,
-            port: this.clientPort
-        });*/
-
-        this.csDBHandler = new ChecksumDBHandler();
     }
 
     initCommunication() {
         this.sockObject.on('message', async (json, callBack) => {
-            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             switch (json.type) {
                 case SyncMessages.modifyFile:
@@ -74,7 +59,7 @@ export default class SyncCommunicator {
                 case SyncMessages.renameFile:
                     console.log('Sync message [FILE][RENAME]: ', json.oldPath, ' --> ', json.path);
 
-                    let fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
+                    let fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
 
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
                         const currentChecksum = getFileChecksum(fullOldPath);
@@ -103,7 +88,13 @@ export default class SyncCommunicator {
                     if (syncActions.checkExistence(fullPath)) {
                         const currentChecksum = getFileChecksum(fullPath);
 
+                        console.log('sc', json.synced_cs);
+                        console.log('cc', currentChecksum);
+                        console.log('===', json.synced_cs == currentChecksum);
+
+
                         if (json.synced_cs === currentChecksum) {
+                            console.log('deleted', fullPath);
                             fs.unlinkSync(fullPath);
                         }
                     }
@@ -137,16 +128,16 @@ export default class SyncCommunicator {
                 case SyncMessages.renameFolder:
                     console.log('Sync message [DIR][RENAME]: ', json.oldPath, ' --> ', json.path);
 
-                    fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.oldPath);
+                    fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
 
                     if (checkExistence(fullOldPath) && await getFolderChecksum(fullOldPath) === json.current_cs) {
                         if (!checkExistence(fullPath)) {
                             fs.renameSync(fullOldPath, fullPath);
                         } else {
                             const names = _.split(json.path, '/');
-                            const newName = names[names.length] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
+                            const newName = names[names.length-1] + '(conflicted-copy-of-' + json.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
                             const newPath = _.replace(json.path, names[names.length - 1], newName);
-                            const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, newPath);
+                            const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH,json.username,  newPath);
 
                             fs.renameSync(fullOldPath, fullNewPath);
                         }
@@ -175,7 +166,7 @@ export default class SyncCommunicator {
         });
 
         this.sockObject.on('action', async (json, callBack) => {
-            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+            const fullPath = path.resolve(process.env.PD_FOLDER_PATH,json.username,  json.path);
 
             switch (json.type) {
                 case SyncActionMessages.newFolder:
@@ -189,7 +180,7 @@ export default class SyncCommunicator {
         this.sockObject.on('file', function (readStream, json) {
             console.log('Sync file [FILE_COPY]: ', json.path);
 
-            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             let writeStream = fs.createWriteStream(fullPath);
             readStream.pipe(writeStream);
@@ -203,7 +194,7 @@ export default class SyncCommunicator {
             console.log('Sync transmissionData: ', json.path);
 
             streamToBuffer(readStream, (err, transmissionData) => {
-                const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
+                const fullPath = path.resolve(process.env.PD_FOLDER_PATH,json.username,  json.path);
                 ChunkBasedSynchronizer.updateOldFile(transmissionData, fullPath);
             })
         });
@@ -217,6 +208,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [FILE][MODIFY]: ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.modifyFile,
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
@@ -229,6 +221,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [FILE][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.renameFile,
                         path: dbEntry.path,
                         oldPath: dbEntry.oldPath,
@@ -242,6 +235,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [FILE][DELETE]: ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.deleteFile,
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
@@ -255,6 +249,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [DIR][NEW]: ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.newFolder,
                         path: dbEntry.path,
                     }, (response) => this.onResponse(dbEntry, response));
@@ -265,6 +260,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [DIR][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.renameFolder,
                         path: dbEntry.path,
                         oldPath: dbEntry.oldPath,
@@ -277,6 +273,7 @@ export default class SyncCommunicator {
                     console.log('Sync request [DIR][DELETE]: ', dbEntry.path);
 
                     this.socket.emit('message', {
+                        username: dbEntry.user,
                         type: SyncMessages.deleteFolder,
                         path: dbEntry.path,
                     }, (response) => this.onResponse(dbEntry, response));
@@ -288,7 +285,7 @@ export default class SyncCommunicator {
     }
 
     async onResponse(dbEntry, response) {
-        const fullPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.path);
+        const fullPath = path.resolve(process.env.PD_FOLDER_PATH,dbEntry.username,  dbEntry.path);
 
         switch (response.action) {
             case SyncActions.justCopy:
@@ -338,9 +335,9 @@ export default class SyncCommunicator {
 
                 const names = _.split(dbEntry.path, '/');
                 const nameAndExtension = _.split(names[names.length - 1], '.');
-                const newNameWithExtension = nameAndExtension[0] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ').' + nameAndExtension[1];
+                const newNameWithExtension = nameAndExtension[0] + '(conflicted-copy-of-' + dbEntry.user + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ').' + nameAndExtension[1];
                 const newPath = _.replace(dbEntry.path, names[names.length - 1], newNameWithExtension);
-                const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, newPath);
+                const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.usern,newPath);
 
                 fs.renameSync(fullPath, fullNewPath);
 
@@ -359,13 +356,13 @@ export default class SyncCommunicator {
 
                 if (response.isConflict) {
                     const names = _.split(dbEntry.path, '/');
-                    const newName = names[names.length] + '(conflicted-copy-of-' + this.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
+                    const newName = names[names.length - 1] + '(conflicted-copy-of-' + dbEntry.user + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
                     const newPath = _.replace(dbEntry.path, names[names.length - 1], newName);
 
-                    this.syncNewDirectory(dbEntry.path, newPath);
+                    this.syncNewDirectory(dbEntry.user, dbEntry.path, newPath);
 
                 } else {
-                    this.syncNewDirectory(dbEntry.path, dbEntry.path)
+                    this.syncNewDirectory(dbEntry.user,dbEntry.path, dbEntry.path)
                 }
 
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
@@ -373,9 +370,9 @@ export default class SyncCommunicator {
         }
     }
 
-    async syncNewDirectory(sourcePath, targetPath) {
+    async syncNewDirectory(username, sourcePath, targetPath) {
         // TODO: Recheck for folder names with dots.
-        const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, sourcePath);
+        const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH,username, sourcePath);
 
         this.socket.emit('action', {
             type: SyncActionMessages.newFolder,
@@ -386,10 +383,10 @@ export default class SyncCommunicator {
             for (let i = 0; i < files.length; i++) {
                 const sourceItemPath = path.join(sourcePath, files[i]);
                 const targetItemPath = path.join(targetPath, files[i]);
-                const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, sourceItemPath);
+                const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, username, sourceItemPath);
 
                 if (fs.statSync(fullSourceItemPath).isDirectory()) {
-                    await this.syncNewDirectory(sourceItemPath, targetItemPath);
+                    await this.syncNewDirectory(username, sourceItemPath, targetItemPath);
                 }
                 else {
                     let ws = this.socket.stream('file', {path: targetItemPath});

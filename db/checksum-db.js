@@ -2,6 +2,7 @@
  * @author Dulaj Atapattu
  */
 import * as databases from './dbs';
+import * as _ from 'lodash'
 
 export default class ChecksumDBHandler {
 
@@ -47,6 +48,22 @@ export default class ChecksumDBHandler {
             console.error(msg);
         }
         result.error = msg;
+    }
+
+    static updateFilePathsAfterRename(oldPath, newPath) {
+        // TODO: Warning: This regex is not working with spaces
+        const regex = new RegExp(oldPath);
+        console.log(regex);
+
+        databases.checkSumDB.find({path: {$regex: regex}}, (err, docs) => {
+            console.log('docs', docs);
+            _.each(docs, (doc) => {
+                const oldFilePath = doc.path;
+                const newFilePath = _.replace(oldFilePath, oldPath, newPath);
+                databases.checkSumDB.update({path: oldFilePath}, {$set: {path: newFilePath}}, {}, (err, numReplaced) => {
+                });
+            });
+        });
     }
 
 }

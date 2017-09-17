@@ -59,7 +59,7 @@ export function isFolderEmpty(fullPath) {
 export function afterSyncFile(sequenceId, path, syncedChecksum) {
     deleteMetadataEntry(sequenceId);
 
-    if (arguments.length === 2) {
+    if (arguments.length === 3) {
         setSyncedChecksum(path, syncedChecksum);
     }
 }

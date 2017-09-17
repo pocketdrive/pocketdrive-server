@@ -50,10 +50,8 @@ export default class MetadataDBHandler {
         });
     }
 
-    static updateEntry(fullPath, updateEntry) {
-        const path = _.replace(fullPath, process.env.PD_FOLDER_PATH, '');
-
-        databases.fileMetaDataDb.update({path: path}, updateEntry, {upsert: true}, (err, numReplaced) => {
+    static updateEntry(userName, relativePath, updateEntry) {
+        databases.fileMetaDataDb.update({user: userName, path: relativePath}, updateEntry, {upsert: true}, (err, numReplaced) => {
         });
     }
 

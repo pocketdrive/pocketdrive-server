@@ -5,11 +5,15 @@ import * as databases from './dbs';
 
 export default class SyncDbHandler {
 
-    static setSyncFolders(username, deviceID, folderNames) {
+    static setSyncFolders(username, deviceId, folderNames) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.update({username: username, deviceID: deviceID}, {$set: {syncFolders: folderNames}}, {upsert: true}, function (err, numReplaced) {
+            databases.syncDb.update({username: username, deviceId: deviceId}, {
+                username: username,
+                deviceId: deviceId,
+                syncFolders: folderNames
+            }, {upsert: true}, function (err, numReplaced) {
                 if (err) {
                     console.error('Database error. Adding new user failed', err);
                     result['error'] = 'Database error. Adding new user failed';

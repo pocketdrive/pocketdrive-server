@@ -5,7 +5,6 @@ import SyncDbHandler from '../db/sync-db';
 import {CommonUtils} from '../utils/common';
 
 const router = express.Router();
-const dbh = new SyncDbHandler();
 
 router.post('/list', CommonUtils.authorize, function (req, res, next) {
     res.set('Content-Type', 'application/json');
@@ -14,7 +13,7 @@ router.post('/list', CommonUtils.authorize, function (req, res, next) {
 
     fileUtils.firstLevelFolders(folderPath)
         .then((firstLevelFolders) => {
-            dbh.getSyncFolders(req.username)
+            SyncDbHandler.getSyncFolders(req.username)
                 .then((dbResult) => {
                     if (dbResult.success) {
                         if (dbResult.data !== null) {
@@ -38,7 +37,8 @@ router.post('/list', CommonUtils.authorize, function (req, res, next) {
 router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
-    dbh.setSyncFolders(req.username, data.deviceID ,data.syncFolders).then((result) => {
+
+    SyncDbHandler.setSyncFolders(req.username, data.deviceId ,data.syncFolders).then((result) => {
         res.set('Content-Type', 'application/json');
         res.send(result);
     })

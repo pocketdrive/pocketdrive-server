@@ -11,10 +11,7 @@ const share = require('./routes/share');
 
 const ssdp = require('./utils/ssdp');
 
-import {SyncRunner} from "./sync-engine/sync-runner";
-
 const app = express();
-const syncRunner = new SyncRunner();
 
 require('events').EventEmitter.defaultMaxListeners = Infinity;
 
@@ -24,7 +21,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/user', users);
+app.use('/', users);
 app.use('/sync', sync);
 app.use('/share', share);
 
@@ -39,7 +36,7 @@ app.use(function (req, res, next) {
 
 /**
  * error handler
- */
+  */
 app.use(function (err, req, res, next) {
     // set locals, only providing error in development
     res.locals.message = err.message;
@@ -50,11 +47,8 @@ app.use(function (err, req, res, next) {
     res.render('error');
 });
 
-const log = console.log;
-
 async function main() {
     ssdp.broadcast();
-    syncRunner.onPdStart();
 }
 
 main();

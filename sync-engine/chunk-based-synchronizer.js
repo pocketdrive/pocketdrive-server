@@ -10,7 +10,7 @@ export class ChunkBasedSynchronizer {
 
     static async getChecksumOfChunks(filename) {
         let hashFilename = `${uuid()}`;
-        let wait = await new Promise((resolve) => {
+        await new Promise((resolve) => {
             cmd.get(
                 `./node_modules/.bin/rabin "${filename}" --bits=8 --min=8192 --max=65536 > ${hashFilename}`,
                 function (err, data, stderr) {
@@ -61,7 +61,8 @@ export class ChunkBasedSynchronizer {
             }
         });
 
-        return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data}));
+        // return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data}));
+        return new JSON.stringify({oldData: old_data, newData: new_data});
     }
 
     static async updateOldFile(transmissionData, oldFilePath) {

@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
 
-import MetadataDBHandler from '../db/file-metadata-db';
 import SyncDbHandler from '../db/sync-db';
 import FileSystemEventListener from './file-system-event-listener';
+import SyncCommunicator from '../communicator/sync-communicator';
 
 /**
  * @author Dulaj Atapattu
@@ -10,30 +10,28 @@ import FileSystemEventListener from './file-system-event-listener';
 export class SyncRunner {
 
     eventListeners = {};
-    metaDbHandler = MetadataDBHandler.instance;
-    syncDbHandler = SyncDbHandler.instance;
 
     onPdStart() {
-        this.syncDbHandler.getAllSyncingUsers().then((users) => {
+        // Create the server socket
+        this.communicator = new SyncCommunicator();
+
+        SyncDbHandler.getAllSyncingUsers().then((users) => {
             _.each(users.data, (user) => {
-                this.eventListeners[user.username] = [];
-
                 _.each(user.syncFolders, (folderName) => {
-                    this.eventListeners[user.username].push(new FileSystemEventListener(user.username, folderName).start());
+                    this.onAddNewSyncDirectory(user.username, folderName);
                 });
-
             });
         });
     }
 
     onPdStop() {
-        _.each(this.eventListeners, (user) => {
+        /*_.each(this.eventListeners, (user) => {
             _.each(user, (listener) => {
                 listener.stop();
             });
         });
 
-        this.eventListeners = {};
+        this.eventListeners = {};*/
     }
 
     onClientConnect(username) {
@@ -44,7 +42,7 @@ export class SyncRunner {
 
     }
 
-    scanMetadataDBForChanges(username){
+    /*scanMetadataDBForChanges(username){
         MetadataDBHandler.getUpdatedFilesOfUser(username).then((updates) => {
             _.each(updates, (update) => {
                 switch (update.action){
@@ -60,13 +58,14 @@ export class SyncRunner {
 
             })
         })
-    }
+    }*/
 
-    onAddNewSyncDirectory(username, folderName) {
-        if(!this.eventListeners[username]){
-            this.eventListeners[username] = [];
+    onAddNewSyncDirectory(username, folderName, deviceIds) {
+        if (!this.eventListeners[username]) {
+            this.eventListeners[username] = {};
         }
 
-        this.eventListeners[username].push(new FileSystemEventListener(username, folderName).start());
+        this.eventListeners[username][folderName] = new FileSystemEventListener(username, folderName, deviceIds);
+        this.eventListeners[username][folderName].start();
     }
 }
