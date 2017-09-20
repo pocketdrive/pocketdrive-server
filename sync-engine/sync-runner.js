@@ -3,69 +3,54 @@ import * as _ from 'lodash';
 import SyncDbHandler from '../db/sync-db';
 import FileSystemEventListener from './file-system-event-listener';
 import SyncCommunicator from '../communicator/sync-communicator';
+import {ServerToPdSynchronizer} from "./server--to-pd-synchronizer";
 
 /**
  * @author Dulaj Atapattu
  */
 export class SyncRunner {
 
-    eventListeners = {};
+    static eventListeners = {};
+    static serverToPdSynchronizers = {};
 
-    onPdStart() {
+    static onPdStart() {
         // Create the server socket
-        this.communicator = new SyncCommunicator();
+        SyncRunner.communicator = new SyncCommunicator();
 
         SyncDbHandler.getAllSyncingUsers().then((users) => {
             _.each(users.data, (user) => {
+                SyncRunner.serverToPdSynchronizers[user.username] = new ServerToPdSynchronizer(user.username, SyncRunner.communicator);
+
                 _.each(user.syncFolders, (folderName) => {
-                    this.onAddNewSyncDirectory(user.username, folderName);
+                    SyncRunner.onAddNewSyncDirectory(user.username, folderName);
                 });
             });
         });
     }
 
-    onPdStop() {
-        /*_.each(this.eventListeners, (user) => {
-            _.each(user, (listener) => {
-                listener.stop();
-            });
-        });
-
-        this.eventListeners = {};*/
-    }
-
-    onClientConnect(username) {
+    static onPdStop() {
 
     }
 
-    onClientDisconnect(username) {
+    static onClientConnect(username) {
 
     }
 
-    /*scanMetadataDBForChanges(username){
-        MetadataDBHandler.getUpdatedFilesOfUser(username).then((updates) => {
-            _.each(updates, (update) => {
-                switch (update.action){
-                    case SyncEvents.NEW:
-                        break;
-                    case SyncEvents.MODIFY:
-                        break;
-                    case SyncEvents.RENAME:
-                        break;
-                    case SyncEvents.DELETE:
-                        break;
-                }
+    static onClientDisconnect(username) {
 
-            })
-        })
-    }*/
+    }
 
-    onAddNewSyncDirectory(username, folderName, deviceIds) {
-        if (!this.eventListeners[username]) {
-            this.eventListeners[username] = {};
+    static onAddNewSyncDirectory(username, folderName, deviceIds) {
+        if (!SyncRunner.eventListeners[username]) {
+            SyncRunner.eventListeners[username] = {};
         }
 
-        this.eventListeners[username][folderName] = new FileSystemEventListener(username, folderName, deviceIds);
-        this.eventListeners[username][folderName].start();
+        SyncRunner.eventListeners[username][folderName] = new FileSystemEventListener(username, folderName, deviceIds);
+        SyncRunner.eventListeners[username][folderName].start();
     }
+
+    static startServerToPdSync(username){
+        this.serverToPdSynchronizers[username].doSync();
+    }
+
 }

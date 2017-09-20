@@ -14,7 +14,6 @@ const ssdp = require('./utils/ssdp');
 import {SyncRunner} from "./sync-engine/sync-runner";
 
 const app = express();
-const syncRunner = new SyncRunner();
 
 require('events').EventEmitter.defaultMaxListeners = Infinity;
 
@@ -54,7 +53,7 @@ const log = console.log;
 
 async function main() {
     ssdp.broadcast();
-    syncRunner.onPdStart();
+    SyncRunner.onPdStart();
 }
 
 main();

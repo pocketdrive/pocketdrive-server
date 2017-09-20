@@ -21,7 +21,8 @@ export const SyncMessages = {
 
 export const SyncActionMessages = {
     chunkBasedSync: 'chunkBasedSync',
-    newFolder: 'newFolder'
+    newFolder: 'newFolder',
+    serverToPdSync: 'serverToPdSync'
 };
 
 export const SyncActions = {

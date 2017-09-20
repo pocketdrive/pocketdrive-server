@@ -142,7 +142,7 @@ export default class MetadataDBHandler {
         });
     }
 
-    static getUpdatedFilesOfUser(username) {
+    static getChangesOfUser(username) {
         let result = {success: false};
 
         return new Promise((resolve) => {
@@ -155,7 +155,6 @@ export default class MetadataDBHandler {
                 }
 
                 resolve(result);
-
             });
         });
     }
