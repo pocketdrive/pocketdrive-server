@@ -1,4 +1,4 @@
-import {Server} from 'fast-tcp';
+import {Server, Socket} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
 import streamToBuffer from 'stream-to-buffer';
@@ -20,32 +20,34 @@ import {CommonUtils} from "../utils/common";
 import {checkExistence} from "../sync-engine/sync-actions";
 import {isFolderEmpty} from "../sync-engine/sync-actions";
 import {getFolderChecksum} from "../sync-engine/sync-actions";
-import {SyncRunner} from "../sync-engine/sync-runner";
+import MetadataDBHandler from "../db/file-metadata-db";
 
 /**
  * @author Dulaj Atapattu
  */
 export default class SyncCommunicator {
-    sockObject;
-    server;
 
-    socket;
-    clientIP;
-    clientPort;
+    clientStats = {};
 
     constructor() {
         // Initialize server to listen for incoming messages
         this.server = new Server();
         this.server.on('connection', (socket) => {
-            this.sockObject = socket;
-            this.initCommunication();
-            console.log('socket connected')
+            this.clientStats[socket.id] = {id: socket.id};
+            this.initCommunication(socket);
+            console.log('Client connected');
+
+            this.clientStats[socket.id].socket = new Socket({
+                host: '192.168.8.100',
+                port: 6000
+            });
+
         });
         this.server.listen(5000);
     }
 
-    initCommunication() {
-        this.sockObject.on('message', async (json, callBack) => {
+    initCommunication(socket) {
+        socket.on('message', async (json, callBack) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             switch (json.type) {
@@ -153,17 +155,16 @@ export default class SyncCommunicator {
                 /*case sm.requestFile:
                     console.log('Fie message: ', json.path);
                     const fPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
-                    const writeStream = this.sockObject.stream('file', {type: sm.newFile, path: json.path});
+                    const writeStream = socket.stream('file', {type: sm.newFile, path: json.path});
                     fs.createReadStream(fPath).pipe(writeStream);
                     break;*/
             }
         });
 
-        this.sockObject.on('action', async (json, callBack) => {
-            const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
-
+        socket.on('action', async (json, callBack) => {
             switch (json.type) {
                 case SyncActionMessages.newFolder:
+                    const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
                     fs.mkdirSync(fullPath);
                     callBack();
@@ -171,13 +172,13 @@ export default class SyncCommunicator {
 
                 case SyncActionMessages.serverToPdSync:
                     console.log('Sync action [SERVER_TO_PD_SYNC]');
-                    SyncRunner.startServerToPdSync(json.username);
-                    callBack(); // TODO: Remove callback???
+                    this.clientStats[socket.id]['username'] = json.username;
+                    this.doSync(this.clientStats[socket.id], callBack);
                     break;
             }
         });
 
-        this.sockObject.on('file', function (readStream, json) {
+        socket.on('file', function (readStream, json) {
             console.log('Sync file [FILE_COPY]: ', json.path);
 
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
@@ -190,7 +191,7 @@ export default class SyncCommunicator {
             });
         });
 
-        this.sockObject.on('transmissionData', (readStream, json) => {
+        socket.on('transmissionData', (readStream, json) => {
             console.log('Sync transmissionData: ', json.path);
 
             streamToBuffer(readStream, (err, transmissionData) => {
@@ -200,83 +201,85 @@ export default class SyncCommunicator {
         });
     }
 
-    async sendSyncRequest(dbEntry) {
+    async sendSyncRequest(clientStats, dbEntry) {
+        clientStats.serializeLock++;
+
         if (dbEntry.type === 'file') {
             switch (dbEntry.action) {
                 case SyncEvents.NEW:
                 case SyncEvents.MODIFY:
                     console.log('Sync request [FILE][MODIFY]: ', dbEntry.path);
 
-                    this.socket.emit('message', {
+                    clientStats['socket'].emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.modifyFile,
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
 
                     break;
 
                 case SyncEvents.RENAME:
                     console.log('Sync request [FILE][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
 
-                    this.socket.emit('message', {
+                    clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.renameFile,
                         path: dbEntry.path,
                         oldPath: dbEntry.oldPath,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
 
                     break;
 
                 case SyncEvents.DELETE:
                     console.log('Sync request [FILE][DELETE]: ', dbEntry.path);
 
-                    this.socket.emit('message', {
+                    clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.deleteFile,
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
                     break;
             }
         } else if (dbEntry.type === 'dir') {
             switch (dbEntry.action) {
                 case SyncEvents.NEW:
-                    console.log('Sync request [DIR][NEW]: ', dbEntry.path);
+                    console.log('Sync request [DIR][NEW]: ', dbEntry.path, clientStats.id);
 
-                    this.socket.emit('message', {
+                    clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.newFolder,
                         path: dbEntry.path,
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
 
                     break;
 
                 case SyncEvents.RENAME:
                     console.log('Sync request [DIR][RENAME]: ', dbEntry.oldPath, ' --> ', dbEntry.path);
 
-                    this.socket.emit('message', {
+                    clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.renameFolder,
                         path: dbEntry.path,
                         oldPath: dbEntry.oldPath,
                         current_cs: dbEntry.current_cs
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
 
                     break;
 
                 case SyncEvents.DELETE:
                     console.log('Sync request [DIR][DELETE]: ', dbEntry.path);
 
-                    this.socket.emit('message', {
+                    clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.deleteFolder,
                         path: dbEntry.path,
-                    }, (response) => this.onResponse(dbEntry, response));
+                    }, (response) => this.onResponse(clientStats, dbEntry, response));
 
                     break;
 
@@ -284,14 +287,14 @@ export default class SyncCommunicator {
         }
     }
 
-    async onResponse(dbEntry, response) {
-        const fullPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.username, dbEntry.path);
+    async onResponse(clientStats, dbEntry, response) {
+        const fullPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.user, dbEntry.path);
 
         switch (response.action) {
             case SyncActions.justCopy:
                 console.log('Sync response [FILE][JUST_COPY]: ', dbEntry.path);
 
-                let writeStream = this.socket.stream('file', {path: dbEntry.path});
+                let writeStream = clientStats.socket.stream('file', {path: dbEntry.path});
                 fs.createReadStream(fullPath).pipe(writeStream);
 
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
@@ -315,13 +318,13 @@ export default class SyncCommunicator {
                 const newFileChecksum = await ChunkBasedSynchronizer.getChecksumOfChunks(fullPath);
                 const transmissionData = await ChunkBasedSynchronizer.getTransmissionData(response.oldFileChecksums, newFileChecksum, fs.readFileSync(fullPath));
 
-                /*this.socket.emit('action', {
+                /*clientStats.socket.emit('action', {
                     type: SyncActionMessages.chunkBasedSync,
                     transmissionData: transmissionData,
                     path: dbEntry.path
                 });*/
 
-                writeStream = this.socket.stream('transmissionData', {path: dbEntry.path});
+                writeStream = clientStats.socket.stream('transmissionData', {path: dbEntry.path});
 
                 let bufferStream = new stream.PassThrough();
                 bufferStream.end(transmissionData);
@@ -341,7 +344,7 @@ export default class SyncCommunicator {
 
                 fs.renameSync(fullPath, fullNewPath);
 
-                let ws = this.socket.stream('file', {path: newPath}, (response) => {
+                let ws = clientStats.socket.stream('file', {path: newPath}, (response) => {
                     console.log('Conflicted file copied : ' + response);
                     deleteMetadataEntry(dbEntry.sequence_id);
                     setSyncedChecksum(newPath, dbEntry.current_cs);
@@ -359,22 +362,25 @@ export default class SyncCommunicator {
                     const newName = names[names.length - 1] + '(conflicted-copy-of-' + dbEntry.user + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
                     const newPath = _.replace(dbEntry.path, names[names.length - 1], newName);
 
-                    this.syncNewDirectory(dbEntry.user, dbEntry.path, newPath);
+                    this.syncNewDirectory(clientStats.socket, dbEntry.user, dbEntry.path, newPath);
 
                 } else {
-                    this.syncNewDirectory(dbEntry.user, dbEntry.path, dbEntry.path)
+                    this.syncNewDirectory(clientStats, dbEntry.user, dbEntry.path, dbEntry.path)
                 }
 
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
         }
+
+        clientStats.serializeLock--;
     }
 
-    async syncNewDirectory(username, sourcePath, targetPath) {
+    async syncNewDirectory(clientStats, username, sourcePath, targetPath) {
+        clientStats.serializeLock++;
         // TODO: Recheck for folder names with dots.
         const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, username, sourcePath);
 
-        this.socket.emit('action', {
+        clientStats.socket.emit('action', {
             type: SyncActionMessages.newFolder,
             path: targetPath
         }, async () => {
@@ -386,13 +392,53 @@ export default class SyncCommunicator {
                 const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, username, sourceItemPath);
 
                 if (fs.statSync(fullSourceItemPath).isDirectory()) {
-                    await this.syncNewDirectory(username, sourceItemPath, targetItemPath);
+                    await this.syncNewDirectory(clientStats, username, sourceItemPath, targetItemPath);
                 }
                 else {
-                    let ws = this.socket.stream('file', {path: targetItemPath});
+                    let ws = clientStats.socket.stream('file', {path: targetItemPath});
                     fs.createReadStream(fullSourceItemPath).pipe(ws);
                 }
             }
+        });
+
+        clientStats.serializeLock--;
+    }
+
+    async doSync(clientStats, callBack) {
+        clientStats.serializeLock = 0;
+
+        await MetadataDBHandler.getChangesOfUser(clientStats.username).then(async (changes) => {
+            changes = changes.data;
+            let i = 0;
+            let tryCount = 0;
+
+            const intervalId = setInterval(async () => {
+                if (clientStats.serializeLock === 0) {
+                    tryCount = 0;
+                    if (i < changes.length) {
+                        await this.sendSyncRequest(clientStats, changes[i++]);
+                    }
+                    else {
+                        clearInterval(intervalId);
+                        callBack();
+                    }
+                }
+                else if (tryCount === 10) {
+                    /*this.communicator.serializeLock = 0;
+                    this.communicator.close();
+                    this.communicator = new SyncCommunicator(this.username, this.ip);
+                    i--;
+                    tryCount = 0;*/
+                    console.error('Max try count reached');
+                }
+                else {
+                    /*tryCount++;
+                    console.log('Retrying to sync: ' , tryCount);*/
+                    console.error('Try ', tryCount);
+                }
+
+            }, 500);
+
         });
     }
 

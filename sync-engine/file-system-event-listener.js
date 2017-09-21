@@ -24,6 +24,7 @@ export default class FileSystemEventListener {
         this.folder = folder;
 
         this.pathPrefix = path.resolve(this.pdPath, this.username);
+        this.pathPrefix += '/'; // TODO: Append system file separator
         this.baseDirectory = path.resolve(this.pathPrefix, this.folder);
         this.hashtable = {};
         this.data = {};
@@ -125,7 +126,7 @@ export default class FileSystemEventListener {
 
                 const relativePath = _.replace(change.addedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, change.addedFiles[i], {
+                MetadataDBHandler.updateEntry(this.username, relativePath, {
                     action: SyncEvents.NEW,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
@@ -142,7 +143,7 @@ export default class FileSystemEventListener {
 
                 const relativePath = _.replace(change.removedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, change.removedFiles[i], {
+                MetadataDBHandler.updateEntry(this.username, relativePath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
@@ -158,7 +159,7 @@ export default class FileSystemEventListener {
 
                 const relativePath = _.replace(change.removedFolders[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, change.removedFolders[i], {
+                MetadataDBHandler.updateEntry(this.username, relativePath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
@@ -174,7 +175,7 @@ export default class FileSystemEventListener {
 
                 const relativePath = _.replace(change.modifiedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, change.modifiedFiles[i], {
+                MetadataDBHandler.updateEntry(this.username, relativePath, {
                     action: SyncEvents.MODIFY,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
