@@ -43,7 +43,7 @@ export default class SyncCommunicator {
         this.server.listen(5000);
     }
 
-    openSocket(clientStats){
+    openSocket(clientStats) {
         this.clientStats[clientStats.id].socket = new Socket({
             host: '192.168.8.100',
             port: 6000
@@ -52,7 +52,7 @@ export default class SyncCommunicator {
         this.clientStats[clientStats.id].serializeLock = 0;
     }
 
-    closeSocket(clientStats){
+    closeSocket(clientStats) {
         clientStats.socket.destroy();
     }
 
@@ -85,6 +85,14 @@ export default class SyncCommunicator {
 
                         } else {
                             callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                        }
+                    }
+                    if (syncActions.checkExistence(fullOldPath) && syncActions.checkExistence(fullPath)) {
+                        const currentChecksumOld = getFileChecksum(fullOldPath);
+                        const currentChecksumNew = getFileChecksum(fullPath);
+
+                        if (currentChecksumOld === currentChecksumNew) {
+                            fs.unlinkSync(fullOldPath);
                         }
                     }
                     else {
@@ -441,7 +449,7 @@ export default class SyncCommunicator {
                 }
                 else {
                     tryCount++;
-                    console.log('Retrying to sync: ' , tryCount);
+                    console.log('Retrying to sync: ', tryCount);
                 }
 
             }, 500);
