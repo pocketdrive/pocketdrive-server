@@ -37,13 +37,23 @@ export default class SyncCommunicator {
             this.initCommunication(socket);
             console.log('Client connected');
 
-            this.clientStats[socket.id].socket = new Socket({
-                host: '192.168.8.100',
-                port: 6000
-            });
+            this.openSocket(this.clientStats[socket.id]);
 
         });
         this.server.listen(5000);
+    }
+
+    openSocket(clientStats){
+        this.clientStats[clientStats.id].socket = new Socket({
+            host: '192.168.8.100',
+            port: 6000
+        });
+
+        this.clientStats[clientStats.id].serializeLock = 0;
+    }
+
+    closeSocket(clientStats){
+        clientStats.socket.destroy();
     }
 
     initCommunication(socket) {
@@ -249,7 +259,7 @@ export default class SyncCommunicator {
         } else if (dbEntry.type === 'dir') {
             switch (dbEntry.action) {
                 case SyncEvents.NEW:
-                    console.log('Sync request [DIR][NEW]: ', dbEntry.path, clientStats.id);
+                    console.log('Sync request [DIR][NEW]: ', dbEntry.path);
 
                     clientStats.socket.emit('message', {
                         username: dbEntry.user,
@@ -424,17 +434,14 @@ export default class SyncCommunicator {
                     }
                 }
                 else if (tryCount === 10) {
-                    /*this.communicator.serializeLock = 0;
-                    this.communicator.close();
-                    this.communicator = new SyncCommunicator(this.username, this.ip);
+                    this.closeSocket(clientStats);
+                    this.openSocket(clientStats);
                     i--;
-                    tryCount = 0;*/
-                    console.error('Max try count reached');
+                    tryCount = 0;
                 }
                 else {
-                    /*tryCount++;
-                    console.log('Retrying to sync: ' , tryCount);*/
-                    console.error('Try ', tryCount);
+                    tryCount++;
+                    console.log('Retrying to sync: ' , tryCount);
                 }
 
             }, 500);

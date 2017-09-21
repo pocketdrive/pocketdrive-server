@@ -62,7 +62,7 @@ export class ChunkBasedSynchronizer {
         });
 
         // return new Buffer.from(JSON.stringify({oldData: old_data, newData: new_data}));
-        return new JSON.stringify({oldData: old_data, newData: new_data});
+        return JSON.stringify({oldData: old_data, newData: new_data});
     }
 
     static async updateOldFile(transmissionData, oldFilePath) {
