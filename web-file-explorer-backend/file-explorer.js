@@ -7,6 +7,7 @@ import decompress from 'decompress';
 
 import {dateToString} from '../web-file-explorer-backend/dateformat';
 import * as pathResolver from '../web-file-explorer-backend/pathresolver';
+import ShareLinkDbHandler from './../db/share-link-db';
 
 export default class FileExplorer {
 
@@ -322,6 +323,22 @@ export default class FileExplorer {
                     }
                 });
             }
+        });
+    }
+
+    static linkShare(username, item) {
+        const dbh = new ShareLinkDbHandler(username, item);
+
+        return new Promise((resolve) => {
+            dbh.shareFile().then((fileId) => {
+                resolve({
+                    "result": {
+                        "success": true,
+                        "error": null,
+                        "id": fileId
+                    }
+                });
+            });
         });
     }
 

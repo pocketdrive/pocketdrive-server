@@ -218,6 +218,18 @@ export class Communicator {
                     ws.send(JSON.stringify(out));
                 });
                 break;
+            case 'linkshare':
+                out.type = 'webConsoleRelay';
+                out['toName'] = obj.message.fromName;
+                out['toId'] = obj.message.fromId;
+                FileExplorer.linkShare(
+                    obj.message.toName,
+                    obj.message.message.item
+                ).then((data) => {
+                    out['result'] = data.result;
+                    ws.send(JSON.stringify(out));
+                });
+                break;
         }
     }
 }
