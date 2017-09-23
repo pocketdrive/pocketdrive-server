@@ -374,7 +374,7 @@ export default class SyncCommunicator {
                 const nameAndExtension = _.split(names[names.length - 1], '.');
                 const newNameWithExtension = nameAndExtension[0] + '(conflicted-copy-of-' + dbEntry.user + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ').' + nameAndExtension[1];
                 const newPath = _.replace(dbEntry.path, names[names.length - 1], newNameWithExtension);
-                const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.usern, newPath);
+                const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.username, newPath);
 
                 fs.renameSync(fullPath, fullNewPath);
 
