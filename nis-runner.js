@@ -68,18 +68,28 @@ export default class NisRunner {
             host: 'localhost',
             port: 5001
         });
+    }
 
-        this.sock.on('file', (readStream, json) => {
+    reconnect() {
+        this.sock.destroy();
+
+        this.sock = new Socket({
+            host: 'localhost',
+            port: 5001
+        });
+    }
+
+    requestFileHashes() {
+        console.log('RUNNNING')
+        const sock = this.sock;
+
+        sock.on('file', (readStream, json) => {
             const filepath = path.join(clientStoragePath, this.deviceId, json.username, json.path);
             this.preparePath(path.dirname(filepath));
             const writeStream = fs.createWriteStream(filepath);
 
             readStream.pipe(writeStream);
         });
-    }
-
-    requestFileHashes() {
-        const sock = this.sock;
 
         sock.emit('message', {type: 'getEvents'}, async (response) => {
             const ids = [];
@@ -92,6 +102,7 @@ export default class NisRunner {
                 nextSeqId++;
                 ids.push(eventObj._id);
             });
+
 
             sock.emit('message', {type: 'flushEvents', ids: ids}, (response) => {
                 if (response) {
@@ -130,7 +141,6 @@ export default class NisRunner {
                         if(fs.statSync(deletePath).isDirectory()) {
                             fse.removeSync(deletePath);
                         } else {
-                            console.log(deletePath)
                             fs.unlinkSync(deletePath);
                         }
                     }
@@ -145,7 +155,11 @@ export default class NisRunner {
             }
         });
 
-
+        // const that = this;
+        // setTimeout(() => {
+        //     // that.reconnect();
+        //     that.requestFileHashes();
+        // }, 5000);
     }
 
     preparePath(filepath) {

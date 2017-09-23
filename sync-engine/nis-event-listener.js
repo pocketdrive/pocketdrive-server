@@ -58,17 +58,13 @@ export default class NisEventListener {
         monitor.on('change', (change) => {
             this.changes.push(change);
 
-            if (this.serializeLock === 0) {
+            // if (this.serializeLock === 0) {
                 this.consume(this.changes.shift());
-            }
+            // }
         });
     }
 
-    async consume(change) {
-        this.serializeLock++;
-        // clearTimeout(SyncRunner.eventListeners[this.username].timeOutId);
-        // SyncRunner.eventListeners[this.username].isWatcherRunning = true;
-
+    consume(change) {
         // Change watcher relative paths to absolute paths
         _.each(change, (changeList, changeListName) => {
             _.each(changeList, (relativePath, index) => {
@@ -91,7 +87,7 @@ export default class NisEventListener {
                 deviceID: this.deviceID,
                 path: newPath,
                 type: ChangeType.DIR,
-                current_cs: await getFolderChecksum(change.addedFolders[0]),
+                current_cs: metaUtils.folderCheckSumSync(change.addedFolders[i]),
                 oldPath: oldPath,
                 sequence_id: NisEventListener.sequenceID++
             });
@@ -125,7 +121,7 @@ export default class NisEventListener {
                     deviceID: this.deviceID,
                     path: _.replace(change.addedFolders[i], this.pathPrefix, ''),
                     type: ChangeType.DIR,
-                    current_cs: await getFolderChecksum(change.addedFolders[i]),
+                    current_cs: metaUtils.folderCheckSumSync(change.addedFolders[i]),
                     sequence_id: NisEventListener.sequenceID++
                 });
             }
@@ -197,11 +193,6 @@ export default class NisEventListener {
             }
 
         }
-
-        this.serializeLock--;
-
-        // SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
-        //     SyncRunner.eventListeners[this.username].isWatcherRunning = false;
-        // }, 5000);
     }
+
 }

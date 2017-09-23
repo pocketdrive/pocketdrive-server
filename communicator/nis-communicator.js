@@ -74,6 +74,7 @@ export default class NisCommunicator {
                 const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                 // ChunkBasedSynchronizer.updateOldFile(transmissionData, fullPath);
             })
+
         });
     }
 
