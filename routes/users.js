@@ -3,7 +3,6 @@ import sha256 from 'sha256';
 import * as jwt from 'jsonwebtoken';
 
 import UserDbHandler from '../db/user-db';
-// import sudo from 'sudo-prompt';
 
 const router = express.Router();
 const dbh = new UserDbHandler();
@@ -19,9 +18,8 @@ router.post('/signin', function (req, res) {
             res.send(result);
         } else {
             result.data.mount = {
-                smbUser: process.env.SMBUSER,
-                smbPassword: process.env.SMBPASSWD,
-                path: process.env.PD_FOLDER_PATH + userData.username
+                username: process.env.SMBUSER,
+                password: process.env.SMBPASSWD
             };
 
             result.token = jwt.sign(
