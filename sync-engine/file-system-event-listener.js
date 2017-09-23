@@ -8,6 +8,7 @@ import MetadataDBHandler from '../db/file-metadata-db';
 import * as metaUtils from '../utils/meta-data';
 import {getFolderChecksum} from "./sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";
+import {SyncRunner} from "./sync-runner";
 
 export const ChangeType = {FILE: 'file', DIR: 'dir'};
 
@@ -59,6 +60,10 @@ export default class FileSystemEventListener {
     }
 
     async consume(change) {
+        this.serializeLock++;
+        clearTimeout(SyncRunner.eventListeners[this.username].timeOutId);
+        SyncRunner.eventListeners[this.username].isWatcherRunning = true;
+
         // Change watcher relative paths to absolute paths
         _.each(change, (changeList, changeListName) => {
             _.each(changeList, (relativePath, index) => {
@@ -70,7 +75,8 @@ export default class FileSystemEventListener {
             // Rename directory
             console.log("Watcher [DIR][RENAME] ", change.removedFolders[0], ' --> ', change.addedFolders[0]);
 
-            const relativePath = _.replace(change.addedFolders[0], this.pathPrefix, '');
+            const newPath = _.replace(change.addedFolders[0], this.pathPrefix, '');
+            const oldPath = _.replace(change.removedFolders[0], this.pathPrefix, '');
 
             ChecksumDBHandler.updateFilePathsAfterRename(oldPath, newPath);
 
@@ -78,10 +84,10 @@ export default class FileSystemEventListener {
                 action: SyncEvents.RENAME,
                 user: this.username,
                 deviceIDs: this.deviceIDs,
-                path: relativePath,
+                path: newPath,
                 type: ChangeType.DIR,
                 current_cs: await getFolderChecksum(change.addedFolders[0]),
-                oldPath: _.replace(change.removedFolders[0], this.pathPrefix, ''),
+                oldPath: oldPath,
                 sequence_id: this.sequenceID++
             });
 
@@ -89,15 +95,16 @@ export default class FileSystemEventListener {
             // Rename file
             console.log("Watcher [FILE][RENAME] ", change.removedFiles[0], ' --> ', change.addedFiles[0]);
 
-            const relativePath = _.replace(change.addedFiles[0], this.pathPrefix, '');
+            const newPath = _.replace(change.addedFiles[0], this.pathPrefix, '');
+            const oldPath = _.replace(change.removedFiles[0], this.pathPrefix, '');
 
-            MetadataDBHandler.updateEntry(this.username, relativePath, {
+            MetadataDBHandler.updateEntry(this.username, oldPath, {
                 action: SyncEvents.RENAME,
                 user: this.username,
                 deviceIDs: this.deviceIDs,
                 type: ChangeType.FILE,
-                path: relativePath,
-                oldPath: _.replace(change.removedFiles[0], this.pathPrefix, ''),
+                path: newPath,
+                oldPath: oldPath,
                 current_cs: metaUtils.getCheckSum(change.addedFiles[0]),
                 sequence_id: this.sequenceID++
             });
@@ -107,13 +114,11 @@ export default class FileSystemEventListener {
             for (let i = 0; i < change.addedFolders.length; i++) {
                 console.log("Watcher [DIR][NEW] ", change.addedFolders[i]);
 
-                const relativePath = _.replace(change.addedFolders[i], this.pathPrefix, '');
-
                 MetadataDBHandler.insertEntry({
                     action: SyncEvents.NEW,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: relativePath,
+                    path: _.replace(change.addedFolders[i], this.pathPrefix, ''),
                     type: ChangeType.DIR,
                     current_cs: await getFolderChecksum(change.addedFolders[i]),
                     sequence_id: this.sequenceID++
@@ -124,13 +129,13 @@ export default class FileSystemEventListener {
             for (let i = 0; i < change.addedFiles.length; i++) {
                 console.log("Watcher [FILE][NEW] ", change.addedFiles[i]);
 
-                const relativePath = _.replace(change.addedFiles[i], this.pathPrefix, '');
+                const newPath = _.replace(change.addedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, {
+                MetadataDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.NEW,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: relativePath,
+                    path: newPath,
                     type: ChangeType.FILE,
                     current_cs: metaUtils.getCheckSum(change.addedFiles[i]),
                     sequence_id: this.sequenceID++
@@ -141,13 +146,13 @@ export default class FileSystemEventListener {
             for (let i = change.removedFiles.length - 1; i > -1; i--) {
                 console.log("Watch [FILE][DELETE] ", change.removedFiles[i]);
 
-                const relativePath = _.replace(change.removedFiles[i], this.pathPrefix, '');
+                const newPath = _.replace(change.removedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, {
+                MetadataDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: relativePath,
+                    path: newPath,
                     type: ChangeType.FILE,
                     sequence_id: this.sequenceID++
                 });
@@ -157,13 +162,13 @@ export default class FileSystemEventListener {
             for (let i = change.removedFolders.length - 1; i > -1; i--) {
                 console.log("Watch [DIR][DELETE] ", change.removedFolders[i]);
 
-                const relativePath = _.replace(change.removedFolders[i], this.pathPrefix, '');
+                const newPath = _.replace(change.removedFolders[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, {
+                MetadataDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: relativePath,
+                    path: newPath,
                     type: ChangeType.DIR,
                     sequence_id: this.sequenceID++
                 });
@@ -173,13 +178,13 @@ export default class FileSystemEventListener {
             for (let i = 0; i < (change.modifiedFiles).length; i++) {
                 console.log("Watch [FILE][MODIFY]  ", change.modifiedFiles[i]);
 
-                const relativePath = _.replace(change.modifiedFiles[i], this.pathPrefix, '');
+                const newPath = _.replace(change.modifiedFiles[i], this.pathPrefix, '');
 
-                MetadataDBHandler.updateEntry(this.username, relativePath, {
+                MetadataDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.MODIFY,
                     user: this.username,
                     deviceIDs: this.deviceIDs,
-                    path: relativePath,
+                    path: newPath,
                     type: ChangeType.FILE,
                     current_cs: metaUtils.getCheckSum(change.modifiedFiles[i]),
                     sequence_id: this.sequenceID++
@@ -187,5 +192,11 @@ export default class FileSystemEventListener {
             }
 
         }
+
+        this.serializeLock--;
+
+        SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
+            SyncRunner.eventListeners[this.username].isWatcherRunning = false;
+        }, 5000);
     }
 }

@@ -21,6 +21,7 @@ import {checkExistence} from "../sync-engine/sync-actions";
 import {isFolderEmpty} from "../sync-engine/sync-actions";
 import {getFolderChecksum} from "../sync-engine/sync-actions";
 import MetadataDBHandler from "../db/file-metadata-db";
+import {SyncRunner} from "../sync-engine/sync-runner";
 
 /**
  * @author Dulaj Atapattu
@@ -147,7 +148,11 @@ export default class SyncCommunicator {
                     if (checkExistence(fullOldPath) && await getFolderChecksum(fullOldPath) === json.current_cs) {
                         if (!checkExistence(fullPath)) {
                             fs.renameSync(fullOldPath, fullPath);
-                        } else {
+                        }
+                        else if (await getFolderChecksum(fullOldPath) === await getFolderChecksum(fullPath)) {
+                            fs.rmdirSync(fullOldPath);
+                        }
+                        else {
                             const names = _.split(json.path, '/');
                             const newName = names[names.length - 1] + '(conflicted-copy-of-' + json.username + '-' + CommonUtils.getDeviceName() + '-' + CommonUtils.getDateTime() + ')';
                             const newPath = _.replace(json.path, names[names.length - 1], newName);
@@ -162,6 +167,9 @@ export default class SyncCommunicator {
                     else {
                         if (!checkExistence(fullPath)) {
                             callBack({action: SyncActions.streamFolder, isConflict: false});
+                        }
+                        else if (await getFolderChecksum(fullPath) === json.current_cs) {
+                            callBack({action: SyncActions.doNothingDir});
                         }
                         else {
                             callBack({action: SyncActions.streamFolder, isConflict: true});
@@ -191,7 +199,13 @@ export default class SyncCommunicator {
                 case SyncActionMessages.serverToPdSync:
                     console.log('Sync action [SERVER_TO_PD_SYNC]');
                     this.clientStats[socket.id]['username'] = json.username;
-                    this.doSync(this.clientStats[socket.id], callBack);
+
+                    if (!SyncRunner.eventListeners[this.clientStats[socket.id].username].isWatcherRunning) {
+                        this.doSync(this.clientStats[socket.id], callBack);
+                    } else{
+                        callBack();
+                    }
+
                     break;
             }
         });
@@ -312,8 +326,10 @@ export default class SyncCommunicator {
             case SyncActions.justCopy:
                 console.log('Sync response [FILE][JUST_COPY]: ', dbEntry.path);
 
-                let writeStream = clientStats.socket.stream('file', {path: dbEntry.path});
-                fs.createReadStream(fullPath).pipe(writeStream);
+                if (checkExistence(fullPath)) {
+                    let writeStream = clientStats.socket.stream('file', {path: dbEntry.path});
+                    fs.createReadStream(fullPath).pipe(writeStream);
+                }
 
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
@@ -342,7 +358,7 @@ export default class SyncCommunicator {
                     path: dbEntry.path
                 });*/
 
-                writeStream = clientStats.socket.stream('transmissionData', {path: dbEntry.path});
+                let writeStream = clientStats.socket.stream('transmissionData', {path: dbEntry.path});
 
                 let bufferStream = new stream.PassThrough();
                 bufferStream.end(transmissionData);

@@ -53,10 +53,8 @@ export default class ChecksumDBHandler {
     static updateFilePathsAfterRename(oldPath, newPath) {
         // TODO: Warning: This regex is not working with spaces
         const regex = new RegExp(oldPath);
-        console.log(regex);
 
         databases.checkSumDB.find({path: {$regex: regex}}, (err, docs) => {
-            console.log('docs', docs);
             _.each(docs, (doc) => {
                 const oldFilePath = doc.path;
                 const newFilePath = _.replace(oldFilePath, oldPath, newPath);

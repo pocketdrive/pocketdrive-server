@@ -96,7 +96,6 @@ export class ChunkBasedSynchronizer {
                 out = Buffer.concat([out, existing_file.slice(oldChunk[1], oldChunk[1] + oldChunk[2])]);
             }
         }
-        console.log(out.byteLength, existing_file.byteLength);
         fs.writeFileSync(`${oldFilePath}`, out)
     }
 }
