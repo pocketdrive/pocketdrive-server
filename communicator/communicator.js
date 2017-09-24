@@ -78,7 +78,7 @@ export class Communicator {
         ws.send(JSON.stringify(answerMessage));
     }
 
-    async connectToCentralServer(username, deviceId) {
+    async connectToCentralServer(deviceId) {
         // TODO improve this
         if (!this.connected) {
             await this.promise;
@@ -86,7 +86,7 @@ export class Communicator {
 
         const msg = {
             type: wsm.registerDevice,
-            data: {username: username, deviceId: deviceId}
+            data: {deviceId: deviceId}
         };
 
         ws.send(
@@ -132,26 +132,23 @@ export class Communicator {
     }
 
     async performWebConsoleTask(obj, ws) {
-        console.log(obj);
         const out = _.cloneDeep(sampleMessage);
+        console.log(obj);
         switch (obj.message.message.action) {
             case 'list':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path).result;
                 ws.send(JSON.stringify(out));
                 break;
             case 'remove':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.remove(obj.message.toName, obj.message.message.items).result;
                 ws.send(JSON.stringify(out));
                 break;
             case 'rename':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.rename(
                     obj.message.toName,
@@ -161,7 +158,6 @@ export class Communicator {
                 break;
             case 'copy':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.copy(
                     obj.message.toName,
@@ -173,7 +169,6 @@ export class Communicator {
                 break;
             case 'move':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.move(
                     obj.message.toName,
@@ -184,7 +179,6 @@ export class Communicator {
                 break;
             case 'createFolder':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.createFolder(
                     obj.message.toName,
@@ -194,7 +188,6 @@ export class Communicator {
                 break;
             case 'compress':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 out['result'] = FileExplorer.compress(
                     obj.message.toName,
@@ -206,7 +199,6 @@ export class Communicator {
                 break;
             case 'extract':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 FileExplorer.extract(
                     obj.message.toName,
@@ -220,7 +212,6 @@ export class Communicator {
                 break;
             case 'linkshare':
                 out.type = 'webConsoleRelay';
-                out['toName'] = obj.message.fromName;
                 out['toId'] = obj.message.fromId;
                 FileExplorer.linkShare(
                     obj.message.toName,
