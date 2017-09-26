@@ -21,6 +21,7 @@ export const SyncMessages = {
 
 export const SyncActionMessages = {
     connectToClient:'connectToClient',
+    disconnectFromClient:'disconnectFromClient',
     chunkBasedSync: 'chunkBasedSync',
     newFolder: 'newFolder',
     serverToPdSync: 'serverToPdSync'

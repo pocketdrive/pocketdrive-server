@@ -192,6 +192,12 @@ export default class SyncCommunicator {
                     this.openSocket(this.clientStats[socket.id]);
                     break;
 
+                case SyncActionMessages.disconnectFromClient:
+                    console.log('Sync action [DISCONNECT_FROM_CLIENT]');
+                    this.closeSocket(this.clientStats[socket.id]);
+                    callBack();
+                    break;
+
                 case SyncActionMessages.newFolder:
                     const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
