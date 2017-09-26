@@ -20,6 +20,7 @@ export const SyncMessages = {
 };
 
 export const SyncActionMessages = {
+    connectToClient:'connectToClient',
     chunkBasedSync: 'chunkBasedSync',
     newFolder: 'newFolder',
     serverToPdSync: 'serverToPdSync'
