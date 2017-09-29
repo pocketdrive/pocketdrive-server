@@ -21,6 +21,7 @@
     "fsmonitor": "^0.2.4",
     "get-folder-size": "^1.0.0",
     "hasha": "^3.0.0",
+    "ip": "^1.1.5",
     "jade": "~1.11.0",
     "jsonwebtoken": "^7.4.1",
     "lodash": "^4.17.4",

@@ -37,16 +37,13 @@ export default class SyncCommunicator {
             this.clientStats[socket.id] = {id: socket.id};
             this.initCommunication(socket);
             console.log('Client connected');
-
-            this.openSocket(this.clientStats[socket.id]);
-
         });
         this.server.listen(5000);
     }
 
     openSocket(clientStats) {
         this.clientStats[clientStats.id].socket = new Socket({
-            host: '192.168.8.100',
+            host: clientStats.clientIP,
             port: 6000
         });
 
@@ -189,6 +186,18 @@ export default class SyncCommunicator {
 
         socket.on('action', async (json, callBack) => {
             switch (json.type) {
+                case SyncActionMessages.connectToClient:
+                    console.log('Sync action [CONNECT_TO_CLIENT]: ', json.ip);
+                    this.clientStats[socket.id].clientIP = json.ip;
+                    this.openSocket(this.clientStats[socket.id]);
+                    break;
+
+                case SyncActionMessages.disconnectFromClient:
+                    console.log('Sync action [DISCONNECT_FROM_CLIENT]');
+                    this.closeSocket(this.clientStats[socket.id]);
+                    callBack();
+                    break;
+
                 case SyncActionMessages.newFolder:
                     const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
