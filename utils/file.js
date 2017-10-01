@@ -142,4 +142,9 @@ export function getAvailableName(dir, filename) {
     }
 };
 
-
+export function isDirectoryExists(path){
+    if(fs.existsSync(path)){
+        return true;
+    }
+    return false;
+}

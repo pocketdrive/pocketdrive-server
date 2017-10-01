@@ -1,4 +1,5 @@
 import * as databases from './dbs';
+import * as _ from 'lodash';
 
 /**
  * @author dulajra
@@ -70,7 +71,7 @@ export default class UserDbHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.userDb.find({},(err, doc) => {
+            databases.userDb.find({}, (err, doc) => {
                 if (err) {
                     this.handleError(result, 'Database error. Find users failed', err);
                     resolve(result);
@@ -80,6 +81,34 @@ export default class UserDbHandler {
                     resolve(result);
                 }
             });
+        });
+    }
+
+    checkUsernames(candidates) {
+        let result = {success: false};
+        let itemsProcessed = 0;
+
+        return new Promise((resolve) => {
+            _.each(candidates, (candidate) => {
+                databases.userDb.findOne({username: candidate.username}, (err, doc) => {
+                    itemsProcessed++;
+                    if (err) {
+                        itemsProcessed--;
+                        this.handleError(result, 'Database error. Find user failed', err);
+                        resolve(result);
+                    } else if (!doc) {
+                        itemsProcessed--;
+                        result.incorrectUsername = candidate.username;
+                        console.log('here   ');
+                        resolve(result);
+                    }
+                    if (itemsProcessed === candidates.length) {
+                        result.success = true;
+                        resolve(result);
+                    }
+                });
+            });
+
         });
     }
 
