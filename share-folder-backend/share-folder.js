@@ -1,7 +1,6 @@
 import {exec} from 'child_process';
 
 import * as  utils from '../utils/file';
-import * as _ from 'lodash';
 
 import UserDbHandler from '../db/user-db';
 import ShareFolderDbHandler from "../db/share-folder-db";
@@ -10,44 +9,42 @@ const dbh = new UserDbHandler();
 
 export default class ShareFolder {
 
-    static share(shareObject, callback) {
+    static share(shareObject, candidate, callback) {
 
         let username_from = shareObject.username_from;
-        let candidates = shareObject.candidates;
         let path = shareObject.path;
         let folder_name = shareObject.folder_name;
 
-        dbh.checkUsernames(candidates).then((result) => {
+        let userObj = {username: candidate.username};
+        dbh.searchUser(userObj).then((result) => {
 
             if (!result.success) {
-
                 result['success'] = false;
-                result['error'] = 'Shared user(s) doesn\'t exist please check usernames';
+                result['error'] = 'Shared user doesn\'t exist';
                 callback(result);
             } else {
-
+                delete result.data;
                 let src = path;
+                let dest = process.env.PD_FOLDER_PATH + '/' + candidate.username + '/' + process.env.SHARED_FOLDER_NAME + '/' + username_from;
 
-                _.each(candidates, (candidate) => {
+                if (utils.isDirectoryExists(src)) {
 
-                    let dest = process.env.PD_FOLDER_PATH + '/' + candidate.username + '/' + process.env.SHARED_FOLDER_NAME + '/' + username_from;
+                    let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';
 
-                    if (utils.isDirectoryExists(src) & !utils.isDirectoryExists(dest)) {
+                    console.log(createDirCmd);
+                    exec(createDirCmd, function (error, stdout, stderr) {
+                        if (error) {
+                            result['success'] = false;
+                            result['error'] = 'Creating shared folder for user failed';
+                            console.error('Creating shared folder for user failed');
+                            console.error(error);
+                            callback(result);
 
-                        let rw = (candidate.permission === 'r') ? '-r' : '';
-                        let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';
+                        } else {
+                            dest = dest + '/' + folder_name;
 
-                        console.log(createDirCmd);
-                        exec(createDirCmd, function (error, stdout, stderr) {
-                            if (error) {
-                                result['success'] = false;
-                                result['error'] = 'Creating shared folder for user failed';
-                                console.error('Creating shared folder for user failed');
-                                console.error(error);
-                                callback(result);
+                            if (!utils.isDirectoryExists(dest)) {
 
-                            } else {
-                                dest = dest + '/' + utils.getAvailableName(dest, folder_name);
                                 createDirCmd = 'mkdir ' + '\"' + `${dest}` + '\"';
 
                                 console.log(createDirCmd);
@@ -59,41 +56,83 @@ export default class ShareFolder {
                                         console.error(error);
                                         callback(result);
                                     } else {
-                                        let mountCmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" --bind ' + rw;
 
-                                        console.log(mountCmd);
-                                        exec(mountCmd, function (error, stdout, stderr) {
-                                            if (error) {
-                                                result['success'] = false;
-                                                result['error'] = 'Mounting shared folder failed';
-                                                console.error('Mounting shared folder failed');
-                                                console.error(error);
-                                                callback(result);
-                                            } else {
-                                                result['success'] =true;
-                                                result['candidate'] = candidate;
-                                                callback(result);
-                                                // ShareFolderDbHandler.shareFolder(shareObject,candidate).then((result)=>{
-                                                //     if(result.success){
-                                                //         result['success'] = true;
-                                                //         callback(result);
-                                                //     }else{
-                                                //         callback(result);
-                                                //     }
-                                                // })
+                                        if (candidate.permission === "rw") {
+                                            let mountCmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" --bind';
 
-                                            }
-                                        });
+                                            console.log(mountCmd);
+                                            exec(mountCmd, function (error, stdout, stderr) {
+                                                if (error) {
+                                                    result['success'] = false;
+                                                    result['error'] = 'Mounting shared folder failed';
+                                                    console.error('Mounting shared folder failed');
+                                                    console.error(error);
+                                                    callback(result);
+                                                } else {
+
+                                                    candidate.destpath = dest;
+                                                    ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
+                                                        if (result.success) {
+                                                            result['success'] = true;
+                                                            callback(result);
+                                                        } else {
+                                                            callback(result);
+                                                        }
+                                                    })
+
+                                                }
+                                            });
+                                        } else {
+                                            let mountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" -o bind';
+
+                                            exec(mountcmd, function (error, stdout, stderr) {
+                                                if (error) {
+                                                    result['success'] = false;
+                                                    result['error'] = 'Mounting shared folder failed';
+                                                    console.error('Mounting shared folder failed');
+                                                    console.error(error);
+                                                    callback(result);
+                                                } else {
+                                                    let remountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
+                                                    exec(remountcmd, function (error, stdout, stderr) {
+                                                        if (error) {
+                                                            result['success'] = false;
+                                                            result['error'] = 'Mounting shared folder failed';
+                                                            console.error('Mounting shared folder failed');
+                                                            console.error(error);
+                                                            callback(result);
+                                                        } else {
+                                                            candidate.destpath = dest;
+                                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
+                                                                if (result.success) {
+                                                                    result['success'] = true;
+                                                                    callback(result);
+                                                                } else {
+                                                                    callback(result);
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
+
                                     }
                                 });
+                            } else {
+                                result['success'] = false;
+                                result['error'] = 'Directory is already shared with ' + `${candidate.username}`;
+                                callback(result);
                             }
-                        });
-                    } else {
-                        result['success'] = false;
-                        result['error'] = 'Directory is already shared with ' + `${candidate.username}`;
-                        callback(result);
-                    }
-                });
+
+                        }
+                    });
+                } else {
+                    result['success'] = false;
+                    result['error'] = 'Source Directory does not exist';
+                    callback(result);
+                }
+
 
             }
         });
@@ -101,5 +140,162 @@ export default class ShareFolder {
 
     }
 
+
+    static unshare(shareObj, candidate, callback) {
+
+        let userObj = {username: candidate};
+        dbh.searchUser(userObj).then((result) => {
+            if (!result.success) {
+                result['success'] = false;
+                result['error'] = 'Shared user doesn\'t exist';
+                callback(result);
+            } else {
+                ShareFolderDbHandler.searchCandidateEntry(shareObj, candidate).then((result) => {
+                    if (!result.success) {
+                        result['success'] = false;
+                        result['error'] = 'This folder is not being shared with this user';
+                        callback(result);
+                    } else {
+                        let user = result.user;
+                        let destpath = result.user.destpath;
+
+                        let umountcmd = 'sudo umount ' + `${destpath}`;
+                        console.log(umountcmd);
+                        exec(umountcmd, (error, stdout, stderror) => {
+                            if (error) {
+                                result['success'] = false;
+                                result['error'] = 'Error in unmounting the shared folder';
+                                callback(result);
+                            } else {
+
+                                let deletecmd = 'sudo rm -rf ' + `${destpath}`;
+                                console.log(deletecmd);
+
+                                exec(deletecmd, (error, stdout, stderror) => {
+                                    if (error) {
+                                        result['success'] = error;
+                                        result['error'] = 'Error in deleting shared file';
+                                        callback(result);
+                                    } else {
+                                        console.log("eliminating candidate");
+                                        console.log(user);
+                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                            console.log(result);
+                                            if (!result.success) {
+                                                result['success'] = false;
+                                                result['error'] = "Error in eliminating user"
+                                                callback(result);
+                                            } else {
+                                                result['success'] = true;
+                                                callback(result);
+                                            }
+
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                });
+            }
+
+        });
+    }
+
+    static changePermission(shareObj, candidate, callback) {
+
+        let src = shareObj.path;
+
+        ShareFolderDbHandler.searchCandidateEntry(shareObj, candidate.username).then((result) => {
+            if (!result.success) {
+                result['success'] = false;
+                result['error'] = 'This folder is not being shared with this user';
+                callback(result);
+            } else {
+                let user = result.user;
+                let dest = result.user.destpath;
+
+                if (candidate.permission !== user.permission) {
+
+                    let umountcmd = 'sudo umount ' + `${dest}`;
+
+                    console.log(umountcmd);
+                    exec(umountcmd, (error, stdout, stderror) => {
+                        if (error) {
+                            result['success'] = error;
+                            result['error'] = 'Error in deleting shared file';
+                            callback(result);
+                        } else {
+
+                            if (candidate.permission === 'r') {
+                                let rmountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" -o bind';
+                                let rremountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
+
+                                exec(`${rmountcmd}` + ' & ' + `${rremountcmd}`, (error, stdout, stderror) => {
+                                    if (error) {
+                                        result['success'] = false;
+                                        result['error'] = 'Error in deleting shared file';
+                                        callback(result);
+                                    } else {
+                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                            if (!result.success) {
+                                                callback(result)
+                                            } else {
+                                                user.permission = "rw";
+                                                ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                                    if (!result.success) {
+                                                        callback(result);
+                                                    } else {
+                                                        result['success'] = true;
+                                                        callback(result);
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            } else {
+                                let rwmountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" --bind';
+                                exec(rwmountcmd, (error, stdout, stderror) => {
+                                    if (error) {
+                                        result['success'] = false;
+                                        result['error'] = 'Error in deleting shared file';
+                                        callback(result);
+                                    } else {
+                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                            if (!result.success) {
+                                                callback(result)
+                                            } else {
+                                                user.permission = "rw";
+                                                ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                                    if (!result.success) {
+                                                        callback(result);
+                                                    } else {
+                                                        result['success'] = true;
+                                                        callback(result);
+                                                    }
+                                                });
+                                            }
+                                        });
+
+                                    }
+                                });
+                            }
+
+                        }
+                    });
+
+                } else {
+                    result['success'] = false;
+                    result['error'] = "No change in the permission";
+                    callback(result);
+                }
+
+            }
+
+        });
+
+    }
 
 }

@@ -14,36 +14,38 @@ export default class ShareFolderDbHandler {
      * }
      * */
 
-    static shareFolder(shareObj,candidate){
-        let result = {success:false}
+    static shareFolder(shareObj, candidate) {
+        let result = {success: false}
 
-        return new Promise((resolve)=>{
+        return new Promise((resolve) => {
 
-            databases.shareDb.findOne({owner:shareObj.username_from,srcpath:shareObj.path},(err,doc)=>{
-                if(err){
+            databases.shareDb.findOne({owner: shareObj.username_from, srcpath: shareObj.path}, (err, doc) => {
+                if (err) {
                     this.handleError(result, 'Database error. Share Folder Insertion failed', err);
                     resolve(result);
-                }else if(!doc){
-                    databases.shareDb.insert({owner:shareObj.username_from,srcpath:shareObj.path,foldername:shareObj.folder_name,candidates:[candidate] },(err,doc)=>{
-                        console.log("In insert");
-                        if(err){
+                } else if (!doc) {
+                    databases.shareDb.insert({
+                        owner: shareObj.username_from,
+                        srcpath: shareObj.path,
+                        candidates: [candidate]
+                    }, (err, doc) => {
+                        if (err) {
                             this.handleError(result, 'Database error. Share Folder Insertion failed', err);
                             resolve(result);
-                        }else if(!doc){
+                        } else if (!doc) {
                             result.error = "Database insertion failed";
                             resolve(result);
-                        }else{
+                        } else {
                             result.success = true;
                             resolve(result);
                         }
                     })
-                }else{
-                    console.log("herererr");
-                    databases.shareDb.update(doc,{$addToSet:{candidates:candidate}},{},(err,doc)=>{
-                        if(doc){
+                } else {
+                    databases.shareDb.update(doc, {$addToSet: {candidates: candidate}}, {}, (err, doc) => {
+                        if (doc) {
                             result.success = true;
                             resolve(result);
-                        }else if(err){
+                        } else if (err) {
                             result.error = "Database update failed";
                             resolve(result);
                         }
@@ -53,91 +55,88 @@ export default class ShareFolderDbHandler {
         })
     }
 
-    // static updateCandidate(shareObj,candidate){
-    //     result = {success:false};
-    //
-    //     return new Promise((resolve)=>{
-    //         databases.shareDb.findOne({ownerusername:shareObj.username_from,srcpath:shareObj.path},(err,doc)=>{
-    //             if(err){
-    //                 this.handleError(result, 'Database error. Find user failed', err);
-    //                 resolve(result);
-    //             }else if(!doc){
-    //                 result.error ="Database entry couldn't be found";
-    //                 resolve(result);
-    //             }else{
-    //
-    //             }
-    //         });
-    //     });
-    // }
-
-    addUser(userObj) {
+    static searchCandidateEntry(shareObj, candidate) {
+        console.log(candidate);
         let result = {success: false};
-
         return new Promise((resolve) => {
-            databases.userDb.findOne({username: userObj.username}, (err, doc) => {
+            databases.shareDb.find({
+                owner: shareObj.username_from,
+                srcpath: shareObj.path,
+                "candidates.username": candidate
+            }, (err, doc) => {
                 if (err) {
-                    this.handleError(result, 'Database error. Find user failed', err);
+                    result.success = false;
+                    this.handleError(result, 'Database error. Share Folder search failed', err);
                     resolve(result);
-                } else if (doc !== null) {
-                    delete doc.password;
-                    this.handleError(result, 'Username already exists');
-                    resolve(result);
-                } else {
-                    databases.userDb.insert(userObj, (err, doc) => {
-                        if (err) {
-                            this.handleError(result, 'Database error. Adding new user failed', err);
-                            resolve(result);
-                        } else {
-                            result.success = true;
-                        }
-
-                        resolve(result);
-                    });
-                }
-
-
-            });
-        });
-
-    }
-
-    searchUser(searchObj) {
-        let result = {success: false};
-
-        return new Promise((resolve) => {
-            databases.userDb.findOne(searchObj, (err, doc) => {
-                if (err) {
-                    this.handleError(result, 'Database error. Search user failed', err);
                 } else if (!doc) {
                     result.success = false;
-                    result.error = 'Incorrect username or password';
+                    result.error = 'search entry cannot be found';
+                    resolve(result);
                 } else {
-                    result.success = true;
-                    result.data = {
-                        user: doc
-                    };
-                    delete result.data.user.password;
+                    if (doc.length !== 0) {
+                        for (let user of doc[0].candidates) {
+                            if (user.username === candidate) {
+                                result.success = true;
+                                result.user = user;
+                                resolve(result);
+                                break;
+                            }
+                        }
+                    } else {
+                        result.success = false;
+                        result.error = "Shared user cannot be found in the database";
+                        resolve(result);
+                    }
+
+
                 }
-                resolve(result);
+            });
+        });
+
+    }
+
+    static eliminateCandidate(shareObj, candidate) {
+        let result = {};
+        return new Promise((resolve) => {
+
+            databases.shareDb.update({
+                owner: shareObj.username_from,
+                srcpath: shareObj.path
+            }, {$pull: {candidates: candidate}}, {}, (err, doc) => {
+                if (err) {
+                    result.success = false;
+                    this.handleError(result, 'Database error. Eliminate Candidate error', err);
+                    resolve(result);
+                } else if (doc === 1) {
+                    result.success = true;
+                    resolve(result);
+                }
             });
         });
     }
 
-    getAllUsers() {
-        let result = {success: false};
+    static renameSrcFolder(shareObj) {
 
+        let result = {success: false};
         return new Promise((resolve) => {
-            databases.userDb.find({},(err, doc) => {
+            databases.shareDb.findOne({owner: shareObj.username_from, srcpath: shareObj.oldpath}, (err, doc) => {
                 if (err) {
-                    this.handleError(result, 'Database error. Find users failed', err);
+                    result['success'] = false;
+                    this.handleError(result, 'Database error. Error in renaming source folder', err);
                     resolve(result);
-                } else if (doc !== null) {
-                    result.success = true;
-                    result.data = doc;
+                } else if (!doc) {
+                    result.success = false;
+                    result.error = 'Couldn\'t able to find the entry';
                     resolve(result);
+                } else {
+                    databases.shareDb.update(doc, {$set: {srcpath: shareObj.newpath}}, {}, (err, numReplaced) => {
+                        if (numReplaced === 1) {
+                            result.success = true;
+                            resolve(result);
+                        }
+                    });
                 }
-            });
+            })
         });
     }
 
