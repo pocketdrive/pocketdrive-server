@@ -84,34 +84,6 @@ export default class UserDbHandler {
         });
     }
 
-    checkUsernames(candidates) {
-        let result = {success: false};
-        let itemsProcessed = 0;
-
-        return new Promise((resolve) => {
-            _.each(candidates, (candidate) => {
-                databases.userDb.findOne({username: candidate.username}, (err, doc) => {
-                    itemsProcessed++;
-                    if (err) {
-                        itemsProcessed--;
-                        this.handleError(result, 'Database error. Find user failed', err);
-                        resolve(result);
-                    } else if (!doc) {
-                        itemsProcessed--;
-                        result.incorrectUsername = candidate.username;
-                        console.log('here   ');
-                        resolve(result);
-                    }
-                    if (itemsProcessed === candidates.length) {
-                        result.success = true;
-                        resolve(result);
-                    }
-                });
-            });
-
-        });
-    }
-
     handleError(result, msg, err) {
         if (arguments.length === 3) {
             console.error(msg, err);

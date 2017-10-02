@@ -6,6 +6,13 @@ import ShareFolderDbHandler from "../db/share-folder-db";
 
 const router = express.Router();
 
+/**   {
+ *      "username_from":"anuradha",
+ *       "candidates":[{"username":"dulaj","permission":"rw"},{"username":"dulaj","permission":"rw"}],
+ *       "path":"/home/anuradha/PocketDrive/vidura/TestFolder",
+ *       "folder_name":"TestFolder"
+ *   }
+ **/
 router.post('/', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
@@ -34,11 +41,17 @@ router.post('/', function (req, res, next) {
 
 });
 
+/**{
+*	    "username_from":"vidura",
+*	    "candidates":["pamoda","dulaj"],
+*	    "path":"/home/anuradha/PocketDrive/vidura/TestFolder",
+*	    "folder_name":"TestFolder"
+*    }
+ **/
 router.post('/unshare', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
-    console.log("/share-folder/unshare");
-
+    console.log("/share-folder/unshare")
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
@@ -62,11 +75,17 @@ router.post('/unshare', function (req, res, next) {
     });
 });
 
+/**  {
+*	"username_from":"anuradha",
+*	"candidates":[{"username":"pamoda","permission":"rw"}],
+*	"path":"/home/anuradha/PocketDrive/vidura/TestFolder",
+*	"folder_name":"TestFolder"
+*   }
+ **/
 router.post('/changepermission', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
     console.log("/share-folder/changepermission");
-
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
