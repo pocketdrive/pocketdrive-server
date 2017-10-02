@@ -4,10 +4,14 @@ import path from 'path';
 import * as _ from 'lodash';
 import archiver from 'archiver';
 import decompress from 'decompress';
+import * as async from 'async';
+
 
 import {dateToString} from '../web-file-explorer-backend/dateformat';
 import * as pathResolver from '../web-file-explorer-backend/pathresolver';
 import ShareLinkDbHandler from './../db/share-link-db';
+import ShareFolder from "../share-folder-backend/share-folder";
+
 
 export default class FileExplorer {
 
@@ -342,6 +346,38 @@ export default class FileExplorer {
         });
     }
 
+
+    static shareFolder(shareObj){
+
+        let response = [];
+        let itemcounter = 0;
+        let overallsuccess = true;
+        return new Promise((resolve)=>{
+            async.each(shareObj.candidates, (candidate) => {
+                ShareFolder.share(shareObj, candidate, (result) => {
+                    itemcounter++;
+                    let msg = {};
+                    msg.username = candidate.username;
+                    msg.success = result.success;
+                    if (!result.success) {
+                        overallsuccess = false;
+                        msg.error = result.error;
+                    }
+                    response.push(msg);
+                    if (itemcounter === shareObj.candidates.length) {
+                        let finalresult={
+                                "overallsuccess": overallsuccess,
+                                "msg": response
+                            }
+                        resolve(finalresult);
+
+                    }
+                });
+            });
+        });
+
+
+    }
     static copyHelper(source, target, name) {
         const file = fs.readFileSync(source);
         fs.writeSync(fs.openSync(path.join(target, path.basename(name)), 'w'), file);

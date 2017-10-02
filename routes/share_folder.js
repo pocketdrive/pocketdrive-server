@@ -20,21 +20,24 @@ router.post('/', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
+    let msg ={};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.share(req.body, candidate, (result) => {
             itemcounter++;
-            let msg = {};
-            msg.username = candidate.username;
-            msg.success = result.success;
             if (!result.success) {
                 overallsuccess = false;
+                msg.username = candidate.username;
                 msg.error = result.error;
+                response.push(msg);
             }
-            response.push(msg);
+
             if (itemcounter === req.body.candidates.length) {
-                response.push({overallsuccess:overallsuccess});
-                res.send(JSON.stringify(response));
+                let finalresult={
+                    "success": overallsuccess,
+                    "msg": response
+                }
+                res.send(JSON.stringify(finalresult));
             }
         });
     });
@@ -55,21 +58,23 @@ router.post('/unshare', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
+    let msg ={};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.unshare(req.body, candidate, (result) => {
             itemcounter++;
-            let msg = {};
-            msg.username = candidate;
-            msg.success = result.success;
             if (!result.success) {
                 overallsuccess = false;
+                msg.username = candidate;
                 msg.error = result.error;
+                response.push(msg);
             }
-            response.push(msg);
             if (itemcounter === req.body.candidates.length) {
-                response.push({overallsuccess:overallsuccess});
-                res.send(JSON.stringify(response));
+                let finalresult={
+                    "success": overallsuccess,
+                    "msg": response
+                }
+                res.send(JSON.stringify(finalresult));
             }
         });
     });
@@ -89,21 +94,24 @@ router.post('/changepermission', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
+    let msg = {};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.changePermission(req.body, candidate, (result) => {
             itemcounter++;
-            let msg = {};
-            msg.username = candidate.username;
-            msg.success = result.success;
+
             if (!result.success) {
                 overallsuccess = false;
+                msg.username = candidate.username;
                 msg.error = result.error;
+                response.push(msg);
             }
-            response.push(msg);
             if (itemcounter === req.body.candidates.length) {
-                response.push({overallsuccess:overallsuccess});
-                res.send(JSON.stringify(response));
+                let finalresult={
+                    "success": overallsuccess,
+                    "msg": response
+                }
+                res.send(JSON.stringify(finalresult));
             }
         });
     });

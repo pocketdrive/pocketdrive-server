@@ -42,7 +42,7 @@ export default class ShareFolder {
 
                         } else {
                             dest = dest + '/' + folder_name;
-
+                            console.log(dest);
                             if (!utils.isDirectoryExists(dest)) {
 
                                 createDirCmd = 'mkdir ' + '\"' + `${dest}` + '\"';
@@ -224,35 +224,47 @@ export default class ShareFolder {
                     exec(umountcmd, (error, stdout, stderror) => {
                         if (error) {
                             result['success'] = error;
-                            result['error'] = 'Error in deleting shared file';
+                            result['error'] = 'Error in unmounting shared file';
+                            console.log(error);
                             callback(result);
                         } else {
 
                             if (candidate.permission === 'r') {
                                 let rmountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" -o bind';
-                                let rremountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
-
-                                exec(`${rmountcmd}` + ' & ' + `${rremountcmd}`, (error, stdout, stderror) => {
+                                console.log(rmountcmd);
+                                exec(rmountcmd, (error, stdout, stderror) => {
                                     if (error) {
                                         result['success'] = false;
-                                        result['error'] = 'Error in deleting shared file';
+                                        result['error'] = 'Error in mounting shared file in read mode';
+                                        console.log(error);
                                         callback(result);
                                     } else {
-                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                            if (!result.success) {
-                                                callback(result)
-                                            } else {
-                                                user.permission = "rw";
-                                                ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                        let rremountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
+                                        exec(rremountcmd,(error,stdout,stderror)=>{
+                                            if (error){
+                                                result['success'] = false;
+                                                result['error'] = 'Error in remounting shared file in read mode';
+                                                console.log(error);
+                                                callback(result);
+                                            }else{
+                                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
                                                     if (!result.success) {
-                                                        callback(result);
+                                                        callback(result)
                                                     } else {
-                                                        result['success'] = true;
-                                                        callback(result);
+                                                        user.permission = "r";
+                                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                                            if (!result.success) {
+                                                                callback(result);
+                                                            } else {
+                                                                result['success'] = true;
+                                                                callback(result);
+                                                            }
+                                                        });
                                                     }
                                                 });
                                             }
                                         });
+
                                     }
                                 });
                             } else {

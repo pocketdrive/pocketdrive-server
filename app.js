@@ -60,6 +60,7 @@ async function main() {
     ssdp.broadcast();
     // SyncRunner.onPdStart();
     // new Communicator().connectToCentralServer('PD12345');
+
 }
 
 main();

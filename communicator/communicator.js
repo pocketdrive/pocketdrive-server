@@ -221,6 +221,16 @@ export class Communicator {
                     ws.send(JSON.stringify(out));
                 });
                 break;
+            // case 'sharefolder':
+            //     out.type = 'webConsoleRelay';
+            //     out['toId'] = obj.message.fromId;
+            //     FileExplorer.shareFolder(
+            //         obj.message.message
+            //     ).then((data) => {
+            //         out['result'] = data.result;
+            //         ws.send(JSON.stringify(out));
+            //     });
+            //     break;
         }
     }
 }
