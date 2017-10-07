@@ -8,7 +8,6 @@ import * as fse from 'fs-extra';
 
 import NisDBHandler from '../db/nis-db';
 
-
 /**
  * @author Anuradha Wickramarachchi
  */

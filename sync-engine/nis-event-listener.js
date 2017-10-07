@@ -1,6 +1,3 @@
-/**
- * Created by anuradhawick on 9/23/17.
- */
 import {SyncEvents} from "./sync-constants";
 
 import fsmonitor from 'fsmonitor';

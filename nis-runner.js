@@ -1,6 +1,3 @@
-/**
- * Created by anuradhawick on 9/23/17.
- */
 import {Socket} from 'fast-tcp';
 import DataStore from 'nedb';
 import * as _ from 'lodash';
@@ -16,6 +13,9 @@ const nisClientDb = new DataStore({
 const clientStoragePath = '/Users/anuradhawick/Documents/FYP-work/Client';
 const otherDeviceID = '';
 
+/**
+ * @author Anuradha Wickramarachchi
+ */
 class NisClientDbHandler {
     static getNextSequenceID(deviceId) {
         let result = {success: false};
