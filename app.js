@@ -15,6 +15,7 @@ const share_folder = require('./routes/share_folder');
 const ssdp = require('./utils/ssdp');
 
 import {SyncRunner} from "./sync-engine/sync-runner";
+import FileExplorer from "./web-file-explorer-backend/file-explorer";
 
 const app = express();
 
@@ -54,13 +55,29 @@ app.use(function (err, req, res, next) {
 });
 
 const log = console.log;
+import * as databases from './db/dbs';
+import ShareFolderDbHandler from "./db/share-folder-db";
 
 async function main() {
 
-    ssdp.broadcast();
+    // ssdp.broadcast();
     // SyncRunner.onPdStart();
-    // new Communicator().connectToCentralServer('PD12345');
-
+    new Communicator().connectToCentralServer('PD12345');
+    // let sahreObj = {
+    //       "username_from":"vidura",
+    //        "candidates":[{"username":"pamoda","permission":"rw"},{"username":"dulaj","permission":"rw"}],
+    //        "path":"/home/anuradha/PocketDrive/vidura/TestFolder",
+    //        "folder_name":"TestFolder"
+    //    }
+    // FileExplorer.shareFolder(sahreObj).then((result)=>{
+    //     console.log(result);
+    // });
+    // databases.shareDb.remove({},{multi:true},(err,doc)=>{
+    //     console.log(doc);
+    // });
+    // ShareFolderDbHandler.searchRecievedFiles("ravidu").then((result)=>{
+    //    console.log(result);
+    // });
 }
 
 main();

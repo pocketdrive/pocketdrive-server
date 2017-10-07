@@ -20,12 +20,12 @@ router.post('/', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
-    let msg ={};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.share(req.body, candidate, (result) => {
             itemcounter++;
             if (!result.success) {
+                let msg ={};
                 overallsuccess = false;
                 msg.username = candidate.username;
                 msg.error = result.error;
@@ -58,12 +58,12 @@ router.post('/unshare', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
-    let msg ={};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.unshare(req.body, candidate, (result) => {
             itemcounter++;
             if (!result.success) {
+                let msg ={};
                 overallsuccess = false;
                 msg.username = candidate;
                 msg.error = result.error;
@@ -94,13 +94,13 @@ router.post('/changepermission', function (req, res, next) {
     let response = [];
     let itemcounter = 0;
     let overallsuccess = true;
-    let msg = {};
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.changePermission(req.body, candidate, (result) => {
             itemcounter++;
 
             if (!result.success) {
+                let msg ={};
                 overallsuccess = false;
                 msg.username = candidate.username;
                 msg.error = result.error;

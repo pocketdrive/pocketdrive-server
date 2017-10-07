@@ -9,6 +9,7 @@ import * as wsm from './ws-messages';
 import PDPeer from './pd-peer';
 import PeerCommunicator from './peer-communicator';
 import FileExplorer from '../web-file-explorer-backend/file-explorer';
+import ShareFolderDbHandler from "../db/share-folder-db";
 
 const ws = new WebSocket(`ws://${centralServer}:${centralServerWSPort}`);
 const sampleMessage = {type: ''};
@@ -133,12 +134,15 @@ export class Communicator {
 
     async performWebConsoleTask(obj, ws) {
         const out = _.cloneDeep(sampleMessage);
-        console.log(obj);
+        // console.log(obj);
         switch (obj.message.message.action) {
             case 'list':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
-                out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path).result;
+                let sharedFolders=await ShareFolderDbHandler.searchOwner(obj.message.toName);
+                let recievedFolders = await ShareFolderDbHandler.searchRecievedFiles(obj.message.toName);
+                // console.log(recievedFolders);
+                out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path,sharedFolders,recievedFolders).result;
                 ws.send(JSON.stringify(out));
                 break;
             case 'remove':
@@ -159,8 +163,10 @@ export class Communicator {
             case 'copy':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
+                recievedFolders = await ShareFolderDbHandler.searchRecievedFiles(obj.message.toName);
                 out['result'] = FileExplorer.copy(
                     obj.message.toName,
+                    recievedFolders,
                     obj.message.message.items,
                     obj.message.message.newPath,
                     obj.message.message.singleFilename
@@ -170,8 +176,10 @@ export class Communicator {
             case 'move':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
+                recievedFolders = await ShareFolderDbHandler.searchRecievedFiles(obj.message.toName);
                 out['result'] = FileExplorer.move(
                     obj.message.toName,
+                    recievedFolders,
                     obj.message.message.items,
                     obj.message.message.newPath,
                 ).result;
@@ -180,8 +188,10 @@ export class Communicator {
             case 'createFolder':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
+                recievedFolders = await ShareFolderDbHandler.searchRecievedFiles(obj.message.toName);
                 out['result'] = FileExplorer.createFolder(
                     obj.message.toName,
+                    recievedFolders,
                     obj.message.message.newPath
                 ).result;
                 ws.send(JSON.stringify(out));
@@ -221,16 +231,16 @@ export class Communicator {
                     ws.send(JSON.stringify(out));
                 });
                 break;
-            // case 'sharefolder':
-            //     out.type = 'webConsoleRelay';
-            //     out['toId'] = obj.message.fromId;
-            //     FileExplorer.shareFolder(
-            //         obj.message.message
-            //     ).then((data) => {
-            //         out['result'] = data.result;
-            //         ws.send(JSON.stringify(out));
-            //     });
-            //     break;
+            case 'sharefolder':
+                out.type = 'webConsoleRelay';
+                out['toId'] = obj.message.fromId;
+                FileExplorer.shareFolder(
+                    obj.message.message
+                ).then((data) => {
+                    out['result'] = data;
+                    ws.send(JSON.stringify(out));
+                });
+                break;
         }
     }
 }

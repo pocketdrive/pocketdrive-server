@@ -1,4 +1,5 @@
 import * as databases from './dbs';
+import * as _ from 'lodash';
 
 /**
  * @author ravidu
@@ -93,6 +94,72 @@ export default class ShareFolderDbHandler {
             });
         });
 
+    }
+
+    static searchOwner(username) {
+
+        let result = {success: false};
+        return new Promise((resolve) => {
+
+            databases.shareDb.find({owner: username},{srcpath:1,_id:0}, (err, doc) => {
+                if (err) {
+                    result.success = false;
+                    this.handleError(result, 'Database error. Cant\'t find whether share folder', err);
+                    resolve(result);
+                } else if (doc && doc.length>0){
+                    result.success = true;
+                    let srcpaths = [];
+                    _.each(doc,(candidate)=>{
+                        srcpaths.push(candidate.srcpath);
+                        if(doc.length===srcpaths.length){
+                            result.data = srcpaths;
+                            resolve(result);
+                        }
+                    });
+
+
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    static searchRecievedFiles(username) {
+        let result = {success: false};
+
+        return new Promise((resolve) => {
+            databases.shareDb.find({"candidates.username": username}, {candidates: 1, _id: 0}, (err, doc) => {
+                if (err) {
+
+                    result.success = false;
+                    this.handleError(result, 'Database error. Cant\'t find whether share folder', err);
+                    resolve(result);
+                } else if (doc && doc.length>0) {
+                    let details = [];
+                    result.success = true;
+                    _.each(doc, (candidates) => {
+                        _.each(candidates, (candidate) => {
+                            _.each(candidate, (user) => {
+                                if (user.username === username) {
+                                    details.push({
+                                        permission:user.permission,
+                                        destpath:user.destpath
+                                    });
+                                }
+                                if (doc.length === details.length) {
+                                    result.data = details;
+                                    resolve(result);
+                                }
+                            });
+                        });
+                    });
+
+                } else {
+                    resolve(result);
+                }
+            });
+        });
     }
 
     static eliminateCandidate(shareObj, candidate) {

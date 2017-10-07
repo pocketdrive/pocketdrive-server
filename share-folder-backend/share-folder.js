@@ -69,13 +69,15 @@ export default class ShareFolder {
                                                     console.error(error);
                                                     callback(result);
                                                 } else {
-
+                                                    console.log("Trying to enter into the database");
                                                     candidate.destpath = dest;
                                                     ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                         if (result.success) {
                                                             result['success'] = true;
                                                             callback(result);
+                                                            console.log("successful database entry");
                                                         } else {
+                                                            console.log("Error in inserting into database");
                                                             callback(result);
                                                         }
                                                     })
@@ -240,13 +242,13 @@ export default class ShareFolder {
                                         callback(result);
                                     } else {
                                         let rremountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
-                                        exec(rremountcmd,(error,stdout,stderror)=>{
-                                            if (error){
+                                        exec(rremountcmd, (error, stdout, stderror) => {
+                                            if (error) {
                                                 result['success'] = false;
                                                 result['error'] = 'Error in remounting shared file in read mode';
                                                 console.log(error);
                                                 callback(result);
-                                            }else{
+                                            } else {
                                                 ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
                                                     if (!result.success) {
                                                         callback(result)
