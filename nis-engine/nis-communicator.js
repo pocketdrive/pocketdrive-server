@@ -1,13 +1,11 @@
 import {Server, Socket} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
-import streamToBuffer from 'stream-to-buffer';
 import * as _ from 'lodash';
 import mkdirp from 'mkdirp';
 import * as fse from 'fs-extra';
 
-import NisDBHandler from '../db/nis-db';
-
+import NisDBHandler from './nis-db';
 
 /**
  * @author Anuradha Wickramarachchi
@@ -21,10 +19,10 @@ export default class NisCommunicator {
         this.server.on('connection', (socket) => {
             this.clientStats[socket.id] = {id: socket.id};
             this.initCommunication(socket);
-            console.log('Client connected');
-
+            console.log('NIS client connected');
         });
         this.server.listen(5001);
+        console.log('NIS server started on port 5001');
     }
 
     initCommunication(socket) {

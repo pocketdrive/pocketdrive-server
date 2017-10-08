@@ -1,15 +1,12 @@
-/**
- * Created by anuradhawick on 9/23/17.
- */
-import {SyncEvents} from "./sync-constants";
+import {SyncEvents} from "../sync-engine/sync-constants";
 
 import fsmonitor from 'fsmonitor';
 import path from 'path';
 import * as _ from 'lodash';
 
-import NisDBHandler from '../db/nis-db';
+import NisDBHandler from './nis-db';
 import * as metaUtils from '../utils/meta-data';
-import {getFolderChecksum} from "./sync-actions";
+import {getFolderChecksum} from "../sync-engine/sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";
 // import {SyncRunner} from "./sync-runner";
 
@@ -21,6 +18,7 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  * @author Anuradha Wickramarachchi
  */
 export default class NisEventListener {
+
     static sequenceID = 0;
 
     constructor(username, folder, deviceID) {

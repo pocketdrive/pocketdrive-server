@@ -36,9 +36,10 @@ export default class SyncCommunicator {
         this.server.on('connection', (socket) => {
             this.clientStats[socket.id] = {id: socket.id};
             this.initCommunication(socket);
-            console.log('Client connected');
+            console.log('Sync client connected');
         });
         this.server.listen(5000);
+        console.log('Sync server started on port 5000');
     }
 
     openSocket(clientStats) {

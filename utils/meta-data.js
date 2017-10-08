@@ -1,12 +1,14 @@
-/**
- * Created by pamoda on 8/7/17.
- */
 import fs from 'fs';
 import path from 'path';
 import md5File from 'md5-file';
+import md5Dir from 'md5-dir';
 import * as _ from 'lodash';
 import crypto from 'crypto';
 
+/**
+ * @author Pamoda Wimalasiri
+ * @author Anuradha Wickramarachchi
+ */
 export function getFileListByArray(directoryArray) {
     let results = [];
     _.each(directoryArray, (dir) => {
@@ -54,7 +56,7 @@ export function getCheckSum(fullPath) {
 export function folderCheckSumSync(fullPath) {
     const files = fs.readdirSync(fullPath);
     const hashes = [];
-    const hash = crypto.createHash('md5')
+    const hash = crypto.createHash('md5');
 
     files.forEach((file) => {
         const filepath = path.join(fullPath, file);
@@ -65,7 +67,7 @@ export function folderCheckSumSync(fullPath) {
         if (stat.isFile()) {
             hash = md5File.sync(filepath)
         } else if (stat.isDirectory()) {
-            hash = md5Dir(filepath)
+            hash = folderCheckSumSync(filepath)
         } else {
             hash = null;
         }
@@ -77,5 +79,4 @@ export function folderCheckSumSync(fullPath) {
     });
 
     return hash.digest('hex');
-
 }

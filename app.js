@@ -1,5 +1,3 @@
-import {Communicator} from "./communicator/communicator";
-
 const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -14,12 +12,14 @@ const share_folder = require('./routes/share_folder');
 
 const ssdp = require('./utils/ssdp');
 
+// import {Communicator} from "./communicator/communicator";
 import {SyncRunner} from "./sync-engine/sync-runner";
-import FileExplorer from "./web-file-explorer-backend/file-explorer";
+import NisCommunicator from "./nis-engine/nis-communicator";
+import NisEventListener from "./nis-engine/nis-event-listener";
 
 const app = express();
 
-require('events').EventEmitter.defaultMaxListeners = Infinity;
+// require('events').EventEmitter.defaultMaxListeners = Infinity;
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -54,30 +54,13 @@ app.use(function (err, req, res, next) {
     res.render('error');
 });
 
-const log = console.log;
-import * as databases from './db/dbs';
-import ShareFolderDbHandler from "./db/share-folder-db";
-
 async function main() {
+    ssdp.broadcast();
+    SyncRunner.onPdStart();
+    // new Communicator().connectToCentralServer('PD12345');
 
-    // ssdp.broadcast();
-    // SyncRunner.onPdStart();
-    new Communicator().connectToCentralServer('PD12345');
-    // let sahreObj = {
-    //       "username_from":"vidura",
-    //        "candidates":[{"username":"pamoda","permission":"rw"},{"username":"dulaj","permission":"rw"}],
-    //        "path":"/home/anuradha/PocketDrive/vidura/TestFolder",
-    //        "folder_name":"TestFolder"
-    //    }
-    // FileExplorer.shareFolder(sahreObj).then((result)=>{
-    //     console.log(result);
-    // });
-    // databases.shareDb.remove({},{multi:true},(err,doc)=>{
-    //     console.log(doc);
-    // });
-    // ShareFolderDbHandler.searchRecievedFiles("ravidu").then((result)=>{
-    //    console.log(result);
-    // });
+    new NisEventListener('dulaj', 'Downloads', ['1002']).start();
+    new NisCommunicator();
 }
 
 main();
