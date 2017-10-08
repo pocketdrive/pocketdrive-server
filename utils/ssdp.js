@@ -11,7 +11,7 @@ exports.broadcast = function () {
     server.addUSN('urn:schemas-upnp-org:device:PocketDrive');
 
     server.start();
-    console.log("Starting PocketDrive REST Server on " + require('ip').address());
+    console.log("PocketDrive service is broadcasting on " + require('ip').address());
 
     process.on('exit', function () {
         server.stop()

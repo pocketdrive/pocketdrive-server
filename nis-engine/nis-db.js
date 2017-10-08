@@ -1,7 +1,7 @@
 import path from 'path';
 import * as _ from 'lodash';
 
-import * as databases from './dbs';
+import * as databases from '../db/dbs';
 import * as metaUtils from '../utils/meta-data';
 
 /**
