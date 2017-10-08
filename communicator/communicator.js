@@ -10,6 +10,7 @@ import PDPeer from './pd-peer';
 import PeerCommunicator from './peer-communicator';
 import FileExplorer from '../web-file-explorer-backend/file-explorer';
 import ShareFolderDbHandler from "../db/share-folder-db";
+import UserDbHandler from "../db/user-db";
 
 const ws = new WebSocket(`ws://${centralServer}:${centralServerWSPort}`);
 const sampleMessage = {type: ''};
@@ -139,10 +140,10 @@ export class Communicator {
             case 'list':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
-                let sharedFolders=await ShareFolderDbHandler.searchOwner(obj.message.toName);
+                let sharedFolders = await ShareFolderDbHandler.searchOwner(obj.message.toName);
                 let recievedFolders = await ShareFolderDbHandler.searchRecievedFiles(obj.message.toName);
                 // console.log(recievedFolders);
-                out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path,sharedFolders,recievedFolders).result;
+                out['result'] = FileExplorer.list(obj.message.toName, obj.message.message.path, sharedFolders, recievedFolders).result;
                 ws.send(JSON.stringify(out));
                 break;
             case 'remove':
@@ -231,15 +232,43 @@ export class Communicator {
                     ws.send(JSON.stringify(out));
                 });
                 break;
+            case 'getusers':
+                let result = {};
+                out.type = 'webConsoleRelay';
+                out['toId'] = obj.message.fromId;
+                if (obj.message.message.issharedFolder) {
+                    FileExplorer.getCandidates(obj.message.toName, obj.message.message.path).then((data) => {
+                        if (data.success) {
+                            result.candidates = data.candidates;
+                        }
+                    });
+                }
+
+                FileExplorer.getUsers(obj.message.toName).then((data) => {
+                    result.success = data.result.success;
+                    result.users = data.result.users;
+                    out['result'] = result;
+                    ws.send(JSON.stringify(out));
+                });
+                break;
             case 'sharefolder':
                 out.type = 'webConsoleRelay';
                 out['toId'] = obj.message.fromId;
-                FileExplorer.shareFolder(
-                    obj.message.message
-                ).then((data) => {
-                    out['result'] = data;
-                    ws.send(JSON.stringify(out));
+                console.log(obj.message.message);
+                FileExplorer.shareFolderChooser(
+                    obj.message.toName,
+                    obj.message.message.path,
+                    obj.message.message.users,
+                    obj.message.message.candidates,
+                    obj.message.message.removedcandidates).then((result)=>{
+                    ws.send(JSON.stringify(result));
                 });
+                // FileExplorer.shareFolder(
+                //     obj.message.message
+                // ).then((data) => {
+                //     out['result'] = data;
+                //     ws.send(JSON.stringify(out));
+                // });
                 break;
         }
     }
