@@ -67,7 +67,7 @@ export function folderCheckSumSync(fullPath) {
         if (stat.isFile()) {
             hash = md5File.sync(filepath)
         } else if (stat.isDirectory()) {
-            hash = md5Dir(filepath)
+            hash = folderCheckSumSync(filepath)
         } else {
             hash = null;
         }
