@@ -79,5 +79,4 @@ export function folderCheckSumSync(fullPath) {
     });
 
     return hash.digest('hex');
-
 }

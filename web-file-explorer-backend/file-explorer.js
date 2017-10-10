@@ -4,14 +4,17 @@ import path from 'path';
 import * as _ from 'lodash';
 import archiver from 'archiver';
 import decompress from 'decompress';
+import * as async from 'async';
 
-
+import UserDbHandler from '../db/user-db';
 import {dateToString} from '../web-file-explorer-backend/dateformat';
 import * as pathResolver from '../web-file-explorer-backend/pathresolver';
 import ShareLinkDbHandler from './../db/share-link-db';
 import ShareFolder from "../share-folder-backend/share-folder";
-import ShareFolderDbHandler from "../db/share-folder-db";
 import {error} from "../communicator/peer-messages";
+import ShareFolderDbHandler from "../db/share-folder-db";
+
+const dbh = new UserDbHandler();
 
 export default class FileExplorer {
 
@@ -60,7 +63,7 @@ export default class FileExplorer {
                             size: stat.size,
                             issharedFolder: true,
                             isrecievedfolder: false,
-                            ismountedfolder:false,
+                            ismountedfolder: false,
                             sharableFolder: true,
                             sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                             date: dateToString(stat.mtime),
@@ -89,7 +92,7 @@ export default class FileExplorer {
                                 }
                             }
                         });
-                        if(mounted){
+                        if (mounted) {
                             return {
                                 name: fileName,
                                 // rights: "Not Implemented", // TODO
@@ -98,7 +101,7 @@ export default class FileExplorer {
                                 size: stat.size,
                                 issharedFolder: false,
                                 isrecievedfolder: true,
-                                ismountedfolder:true,
+                                ismountedfolder: true,
                                 sharableFolder: false,
                                 sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                                 date: dateToString(stat.mtime),
@@ -114,7 +117,7 @@ export default class FileExplorer {
                                 size: stat.size,
                                 issharedFolder: false,
                                 isrecievedfolder: true,
-                                ismountedfolder:false,
+                                ismountedfolder: false,
                                 sharableFolder: false,
                                 sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                                 date: dateToString(stat.mtime),
@@ -130,7 +133,7 @@ export default class FileExplorer {
                                 size: stat.size,
                                 issharedFolder: false,
                                 isrecievedfolder: true,
-                                ismountedfolder:false,
+                                ismountedfolder: false,
                                 sharableFolder: false,
                                 sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                                 date: dateToString(stat.mtime),
@@ -145,7 +148,7 @@ export default class FileExplorer {
                                 size: stat.size,
                                 issharedFolder: false,
                                 isrecievedfolder: true,
-                                ismountedfolder:false,
+                                ismountedfolder: false,
                                 sharableFolder: false,
                                 sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                                 date: dateToString(stat.mtime),
@@ -162,7 +165,7 @@ export default class FileExplorer {
                         size: stat.size,
                         issharedFolder: false,
                         isrecievedfolder: false,
-                        ismountedfolder:false,
+                        ismountedfolder: false,
                         sharableFolder: stat.isDirectory() ? true : false,
                         sharedFolder: filePath === rootShareFolderPath & stat.isDirectory() & fileName === process.env.SHARED_FOLDER_NAME,
                         date: dateToString(stat.mtime),
@@ -269,24 +272,24 @@ export default class FileExplorer {
         });
 
         const newPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(targetPath));
-        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username,process.env.SHARED_FOLDER_NAME);
+        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username, process.env.SHARED_FOLDER_NAME);
 
         let iscopyable = false;
         let error = false;
         let errorMessage = null;
 
-        if(newPath.includes(sharedFolderPath)){
-            _.each(recievedFolders.data,(user)=>{
-                if(newPath.includes(user.destpath) && user.permission==='rw'){
+        if (newPath.includes(sharedFolderPath)) {
+            _.each(recievedFolders.data, (user) => {
+                if (newPath.includes(user.destpath) && user.permission === 'rw') {
                     iscopyable = true;
                     return false;
                 }
             });
-        }else{
+        } else {
             iscopyable = true;
         }
 
-        if(iscopyable){
+        if (iscopyable) {
             _.each(oldPaths, (oldPath, index) => {
                 try {
                     FileExplorer.copyHelper(oldPath, newPath, items[index]);
@@ -297,7 +300,7 @@ export default class FileExplorer {
                 }
             });
 
-        }else{
+        } else {
             error = true;
             errorMessage = "You don't have permission to copy to the relevant destination"
         }
@@ -332,34 +335,34 @@ export default class FileExplorer {
         });
 
         const target = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(newPath));
-        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username,process.env.SHARED_FOLDER_NAME);
+        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username, process.env.SHARED_FOLDER_NAME);
 
         let ismovable = false;
         let error = false;
         let errorMessage = null;
 
-        if(target.includes(sharedFolderPath)){
-            _.each(recievedFolders.data,(user)=>{
-                if(target.includes(user.destpath) && user.permission==='rw'){
+        if (target.includes(sharedFolderPath)) {
+            _.each(recievedFolders.data, (user) => {
+                if (target.includes(user.destpath) && user.permission === 'rw') {
                     ismovable = true;
                     return false;
                 }
             });
-        }else{
+        } else {
             ismovable = true;
         }
 
-        if(ismovable){
+        if (ismovable) {
             try {
-                    fse.moveSync(itemPaths[0], path.join(target, path.basename(itemPaths[0])));
-                } catch (e) {
+                fse.moveSync(itemPaths[0], path.join(target, path.basename(itemPaths[0])));
+            } catch (e) {
                 console.log(e);
-                    error = true;
-                    errorMessage = e;
-                    return false;
-                }
-        }else{
-            error =true;
+                error = true;
+                errorMessage = e;
+                return false;
+            }
+        } else {
+            error = true;
             errorMessage = "You don't have permission to move to destination";
         }
 
@@ -382,33 +385,33 @@ export default class FileExplorer {
 
     static createFolder(username, recievedFolders, newPath) {
         const folderPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(newPath));
-        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username,process.env.SHARED_FOLDER_NAME);
+        const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username, process.env.SHARED_FOLDER_NAME);
 
         console.log(newPath);
         let error = false;
         let errorMessage = null;
         let ispossible = false;
 
-        if(folderPath.includes(sharedFolderPath)){
-            _.each(recievedFolders.data,(user)=>{
-                if(folderPath.includes(user.destpath) && user.permission==='rw'){
+        if (folderPath.includes(sharedFolderPath)) {
+            _.each(recievedFolders.data, (user) => {
+                if (folderPath.includes(user.destpath) && user.permission === 'rw') {
                     ispossible = true;
                     return false;
                 }
             });
-        }else{
+        } else {
             ispossible = true;
         }
 
-        if(ispossible){
+        if (ispossible) {
             try {
-                fse.ensureDirSync(folderPath,0o777);
+                fse.ensureDirSync(folderPath, 0o777);
             } catch (e) {
                 error = true;
                 errorMessage = e;
             }
 
-        }else{
+        } else {
             error = true;
             errorMessage = "You don't have permission to create folder in the relevant destination"
         }
@@ -534,11 +537,158 @@ export default class FileExplorer {
     }
 
 
+    static shareFolderChooser(username, folderpath, users, candidates, removedCandidates) {
+
+        const newpath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(folderpath));
+        let arr =folderpath.split('/');
+        let foldername = arr[arr.length-1];
+        let finalresult = [];
+
+        return new Promise((resolve)=>{
+            if (users && users.length > 0) {
+                console.log("Inside users")
+                let shareObj = {
+                    username_from: username,
+                    candidates: users,
+                    path: newpath,
+                    folder_name:foldername
+                }
+                this.shareFolder(shareObj).then((result)=>{
+                    if(!candidates && removedCandidates.length===0){
+                        resolve({
+                            "result": {
+                                "success": true,
+                                "msg": result
+                            }
+                        });
+                    }else{
+                        finalresult.push(result);
+                    }
+                });
+            }
+
+            console.log(!candidates);
+            console.log(removedCandidates);
+            if(candidates && candidates.length>0){
+                console.log("Inside this");
+                let shareObj ={
+                	username_from:username,
+                	candidates:candidates,
+                	path:newpath,
+                	folder_name:foldername
+                   }
+                this.changeSharedFolderPermission(shareObj).then((result)=>{
+                    // console.log(result);
+                    if(removedCandidates.length===0){
+                        finalresult.push(result);
+                        resolve({
+                            "result": {
+                                "success": true,
+                                "msg": finalresult
+                            }
+                        });
+                    }else{
+                        finalresult.push(result);
+                    }
+                });
+                console.log("After users");
+            }
+
+            if(removedCandidates && removedCandidates.length>0){
+                console.log("Inside this");
+                let namearr = [];
+                for(let user of removedCandidates){
+                    namearr.push(user.username);
+                }
+                let shareObj ={
+            	    username_from:username,
+            	    candidates:namearr,
+            	    path:newpath,
+            	    folder_name:foldername
+                    }
+                    this.removeShareFolder(shareObj).then((result)=>{
+                        finalresult.push(result);
+                        resolve({
+                            "result": {
+                                "success": true,
+                                "msg": finalresult
+                            }
+                        });
+
+                    });
+            }
+            console.log("finalresult");
+        });
+
+
+
+
+    }
+
+    static removeShareFolder(shareObj){
+        let response = [];
+        let itemcounter = 0;
+        let overallsuccess = true;
+
+        return new Promise((resolve)=>{
+            async.each(shareObj.candidates, (candidate) => {
+                ShareFolder.unshare(shareObj, candidate, (result) => {
+                    itemcounter++;
+                    if (!result.success) {
+                        let msg ={};
+                        overallsuccess = false;
+                        msg.username = candidate;
+                        msg.error = result.error;
+                        response.push(msg);
+                    }
+                    if (itemcounter === shareObj.candidates.length) {
+                        let finalresult={
+                            "success": overallsuccess,
+                            "msg": response
+                        }
+                        resolve(finalresult);
+                    }
+                });
+            });
+        });
+
+    }
+    static changeSharedFolderPermission(shareObj){
+        let response = [];
+        let itemcounter = 0;
+        let overallsuccess = true;
+
+        return new Promise((resolve)=>{
+            async.each(shareObj.candidates, (candidate) => {
+                ShareFolder.changePermission(shareObj, candidate, (result) => {
+                    itemcounter++;
+
+                    if (!result.success) {
+                        let msg ={};
+                        overallsuccess = false;
+                        msg.username = candidate.username;
+                        msg.error = result.error;
+                        response.push(msg);
+                    }
+                    if (itemcounter === shareObj.candidates.length) {
+                            let finalresult = {
+                                "success": overallsuccess,
+                                "msg": response
+                            }
+                            resolve(finalresult);
+                    }
+                });
+            });
+        });
+
+    }
+
     static shareFolder(shareObj) {
 
         let response = [];
         let itemcounter = 0;
         let overallsuccess = true;
+
         return new Promise((resolve) => {
             async.each(shareObj.candidates, (candidate) => {
                 ShareFolder.share(shareObj, candidate, (result) => {
@@ -562,8 +712,61 @@ export default class FileExplorer {
                 });
             });
         });
+    }
 
+    static getUsers(username) {
 
+        return new Promise((resolve) => {
+            dbh.getAllUsers().then((result) => {
+                if (result.success) {
+                    let users = [];
+                    _.each(result.data, (user) => {
+                        if (user.username !== username) {
+                            let candidate = {
+                                username: user.username,
+                                name: `${user.firstname}` + ' ' + `${user.lastname}`,
+                                fullname: `${user.firstname}` + ' ' + `${user.lastname}` + ' (' + `${user.username}` + ')'
+                            };
+                            users.push(candidate);
+                        }
+                    });
+                    if (users.length === 0) {
+                        resolve({
+                            "result": {
+                                "success": false,
+                                "error": "No user to share"
+                            }
+                        });
+                    } else {
+                        resolve({
+                            "result": {
+                                "success": true,
+                                "users": users
+                            }
+                        });
+                    }
+
+                } else {
+                    resolve({
+                        "result": {
+                            "success": false,
+                            "error": "Cannot find users"
+                        }
+                    });
+                }
+            });
+        });
+
+    }
+
+    static getCandidates(username, srcpath) {
+
+        const destination = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(srcpath));
+        return new Promise((resolve) => {
+            ShareFolderDbHandler.searchCandidates(username, destination).then((result) => {
+                resolve(result);
+            });
+        });
     }
 
     static copyHelper(source, target, name) {

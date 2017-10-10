@@ -101,23 +101,25 @@ export default class ShareFolderDbHandler {
         let result = {success: false};
         return new Promise((resolve) => {
 
-            databases.shareDb.find({owner: username},{srcpath:1,_id:0}, (err, doc) => {
+            databases.shareDb.find({owner: username}, {srcpath: 1, candidates:1,_id: 0}, (err, doc) => {
                 if (err) {
                     result.success = false;
                     this.handleError(result, 'Database error. Cant\'t find whether share folder', err);
                     resolve(result);
-                } else if (doc && doc.length>0){
+                } else if (doc && doc.length > 0) {
                     result.success = true;
                     let srcpaths = [];
-                    _.each(doc,(candidate)=>{
-                        srcpaths.push(candidate.srcpath);
-                        if(doc.length===srcpaths.length){
+                    let counter = 0;
+                    _.each(doc, (candidate) => {
+                        ++counter;
+                        if(candidate.candidates.length>0){
+                            srcpaths.push(candidate.srcpath);
+                        }
+                        if (doc.length === counter) {
                             result.data = srcpaths;
                             resolve(result);
                         }
                     });
-
-
                 } else {
                     resolve(result);
                 }
@@ -135,7 +137,7 @@ export default class ShareFolderDbHandler {
                     result.success = false;
                     this.handleError(result, 'Database error. Cant\'t find whether share folder', err);
                     resolve(result);
-                } else if (doc && doc.length>0) {
+                } else if (doc && doc.length > 0) {
                     let details = [];
                     result.success = true;
                     _.each(doc, (candidates) => {
@@ -143,8 +145,8 @@ export default class ShareFolderDbHandler {
                             _.each(candidate, (user) => {
                                 if (user.username === username) {
                                     details.push({
-                                        permission:user.permission,
-                                        destpath:user.destpath
+                                        permission: user.permission,
+                                        destpath: user.destpath
                                     });
                                 }
                                 if (doc.length === details.length) {
@@ -204,6 +206,24 @@ export default class ShareFolderDbHandler {
                     });
                 }
             })
+        });
+    }
+
+    static searchCandidates(username, path) {
+        let result = {success: false};
+        return new Promise((resolve) => {
+            databases.shareDb.find({owner: username, srcpath: path}, {candidates: 1, _id: 0}, (err, doc) => {
+                if (err) {
+                    this.handleError(result, 'Database error. Cant\'t find whether share folder', err);
+                    resolve(result);
+                } else if (doc && doc.length > 0) {
+                    result.success = true;
+                    result.candidates=doc[0].candidates;
+                    resolve(result);
+                } else {
+                    resolve(result);
+                }
+            });
         });
     }
 
