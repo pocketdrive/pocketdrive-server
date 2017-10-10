@@ -1,8 +1,6 @@
 import express from 'express';
 import ShareFolder from "../share-folder-backend/share-folder";
 import * as async from 'async';
-import ShareFolderDbHandler from "../db/share-folder-db";
-
 
 const router = express.Router();
 
@@ -16,28 +14,28 @@ const router = express.Router();
 router.post('/', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
-    console.log("/share-folder");
     let response = [];
-    let itemcounter = 0;
-    let overallsuccess = true;
+    let itemCounter = 0;
+    let overallSuccess = true;
 
     async.each(req.body.candidates, (candidate) => {
         ShareFolder.share(req.body, candidate, (result) => {
-            itemcounter++;
+            itemCounter++;
             if (!result.success) {
                 let msg ={};
-                overallsuccess = false;
+                overallSuccess = false;
                 msg.username = candidate.username;
                 msg.error = result.error;
                 response.push(msg);
             }
 
-            if (itemcounter === req.body.candidates.length) {
-                let finalresult={
-                    "success": overallsuccess,
+            if (itemCounter === req.body.candidates.length) {
+                let finalResult={
+                    "success": overallSuccess,
                     "msg": response
-                }
-                res.send(JSON.stringify(finalresult));
+                };
+
+                res.send(JSON.stringify(finalResult));
             }
         });
     });
