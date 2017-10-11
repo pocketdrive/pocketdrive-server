@@ -4,7 +4,7 @@ import fsmonitor from 'fsmonitor';
 import path from 'path';
 import * as _ from 'lodash';
 
-import NisDBHandler from './nis-db';
+import NisDBHandler from '../db/nis-meta-db';
 import * as metaUtils from '../utils/meta-data';
 import {getFolderChecksum} from "../sync-engine/sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";

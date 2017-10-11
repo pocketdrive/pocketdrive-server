@@ -4,7 +4,7 @@ import fsmonitor from 'fsmonitor';
 import path from 'path';
 import * as _ from 'lodash';
 
-import MetadataDBHandler from '../db/file-metadata-db';
+import MetadataDBHandler from '../db/sync-meta-db';
 import * as metaUtils from '../utils/meta-data';
 import {getFolderChecksum} from "./sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";

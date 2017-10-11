@@ -3,15 +3,15 @@
  */
 import * as databases from './dbs';
 
-export default class SyncDbHandler {
+export default class NisDbHandler {
 
-    static setSyncFolders(username, deviceId, folderNames) {
+    static setSyncFolders(username, deviceIds, folderNames) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.update({username: username, deviceId: deviceId}, {
+            databases.nisDb.update({username: username, deviceId: deviceIds}, {
                 username: username,
-                deviceId: deviceId,
+                deviceId: deviceIds,
                 syncFolders: folderNames
             }, {upsert: true}, function (err, numReplaced) {
                 if (err) {
@@ -29,7 +29,7 @@ export default class SyncDbHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.findOne({username: username}, (err, doc) => {
+            databases.nisDb.findOne({username: username}, (err, doc) => {
                 if (err) {
                     this.handleError(result, 'Database error. Cannot read sync folders', err);
                 } else {
@@ -46,7 +46,7 @@ export default class SyncDbHandler {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.find({}, (err, doc) => {
+            databases.nisDb.find({}, (err, doc) => {
                 if (err) {
                     this.handleError(result, 'Database error. Read all failed.', err);
                     resolve(result);
