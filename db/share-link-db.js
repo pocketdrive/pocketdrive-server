@@ -1,5 +1,5 @@
 /**
- * @author anuradhawick
+ * @author Anuradha Wickramarachchi
  */
 import uuid from 'uuid/v4';
 import * as _ from 'lodash';

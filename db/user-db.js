@@ -1,8 +1,7 @@
 import * as databases from './dbs';
-import * as _ from 'lodash';
 
 /**
- * @author dulajra
+ * @author Dulaj Atapattu
  */
 export default class UserDbHandler {
 
