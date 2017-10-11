@@ -2,7 +2,7 @@ import * as databases from './dbs';
 import * as _ from 'lodash';
 
 /**
- * @author ravidu
+ * @author Ravidu Lashan
  */
 export default class ShareFolderDbHandler {
 

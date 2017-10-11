@@ -8,6 +8,7 @@ var cors = require('cors')
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
+const nis = require('./routes/nis');
 const share = require('./routes/share');
 
 const ssdp = require('./utils/ssdp');
@@ -31,6 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/user', users);
 app.use('/sync', sync);
+app.use('/nis', nis);
 app.use('/share', share);
 
 /**

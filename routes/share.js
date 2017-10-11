@@ -1,5 +1,8 @@
+/**
+ * @author Ravidu Lashan
+ */
+
 import express from 'express';
-import path from 'path';
 import ShareFolder from "../share-folder-backend/share-folder";
 import * as async from 'async';
 import {CommonUtils} from "../utils/common";

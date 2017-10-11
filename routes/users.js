@@ -1,3 +1,7 @@
+/**
+ * @author Dulaj Atapattu
+ */
+
 import express from 'express';
 import sha256 from 'sha256';
 import * as jwt from 'jsonwebtoken';

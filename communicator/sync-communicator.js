@@ -20,7 +20,7 @@ import {CommonUtils} from "../utils/common";
 import {checkExistence} from "../sync-engine/sync-actions";
 import {isFolderEmpty} from "../sync-engine/sync-actions";
 import {getFolderChecksum} from "../sync-engine/sync-actions";
-import MetadataDBHandler from "../db/file-metadata-db";
+import MetadataDBHandler from "../db/sync-meta-db";
 import {SyncRunner} from "../sync-engine/sync-runner";
 
 /**
