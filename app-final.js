@@ -7,10 +7,12 @@ const bodyParser = require('body-parser');
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
+const nis = require('./routes/nis');
 const share = require('./routes/share');
 
 const ssdp = require('./utils/ssdp');
 
+import {Communicator} from "./communicator/communicator";
 import {SyncRunner} from "./sync-engine/sync-runner";
 
 const app = express();
@@ -25,6 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/user', users);
 app.use('/sync', sync);
+app.use('/nis', nis);
 app.use('/share', share);
 
 /**
@@ -52,6 +55,7 @@ app.use(function (err, req, res, next) {
 async function main() {
     ssdp.broadcast();
     SyncRunner.onPdStart();
+    new Communicator().connectToCentralServer('PD12345');
 }
 
 main();
