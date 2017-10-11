@@ -56,11 +56,11 @@ app.use(function (err, req, res, next) {
 
 async function main() {
     ssdp.broadcast();
-    SyncRunner.onPdStart();
+    // SyncRunner.onPdStart();
     // new Communicator().connectToCentralServer('PD12345');
 
-    new NisEventListener('dulaj', 'Downloads', ['1002']).start();
-    new NisCommunicator();
+    // new NisEventListener('dulaj', 'Downloads', ['1002']).start();
+    // new NisCommunicator();
 }
 
 main();

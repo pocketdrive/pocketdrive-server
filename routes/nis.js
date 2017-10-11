@@ -5,8 +5,8 @@
 import express from 'express';
 
 import * as fileUtils from '../utils/file';
-import SyncDbHandler from '../db/sync-db';
 import {CommonUtils} from '../utils/common';
+import NisDbHandler from "../db/nis-db";
 
 const router = express.Router();
 
@@ -17,14 +17,14 @@ router.post('/list', CommonUtils.authorize, function (req, res, next) {
 
     fileUtils.firstLevelFolders(folderPath)
         .then((firstLevelFolders) => {
-            SyncDbHandler.getSyncFolders(req.username)
+            NisDbHandler.getSyncFolders(req.username, req.body.clientId)
                 .then((dbResult) => {
                     if (dbResult.success) {
                         if (dbResult.data !== null) {
                             for (let i = 0; i < dbResult.data.length; i++) {
                                 for (let j = 0; j < firstLevelFolders.length; j++) {
-                                    if (dbResult.data[i] === firstLevelFolders[j].name) {
-                                        firstLevelFolders[j].sync = true;
+                                    if (dbResult.data[i].name === firstLevelFolders[j].name) {
+                                        firstLevelFolders[j].syncDevices = dbResult.data[i].syncDevices;
                                     }
                                 }
                             }
@@ -42,7 +42,7 @@ router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
 
-    SyncDbHandler.setSyncFolders(req.username, data.deviceId ,data.syncFolders).then((result) => {
+    NisDbHandler.setSyncFolders(req.username, data.clientId ,data.syncFolders).then((result) => {
         res.set('Content-Type', 'application/json');
         res.send(result);
     })

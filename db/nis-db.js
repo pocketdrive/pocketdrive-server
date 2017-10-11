@@ -5,14 +5,14 @@ import * as databases from './dbs';
 
 export default class NisDbHandler {
 
-    static setSyncFolders(username, deviceIds, folderNames) {
+    static setSyncFolders(username, clientId, syncFolders) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.nisDb.update({username: username, deviceId: deviceIds}, {
+            databases.nisDb.update({username: username, clientId: clientId}, {
                 username: username,
-                deviceId: deviceIds,
-                syncFolders: folderNames
+                clientId: clientId,
+                syncFolders: syncFolders
             }, {upsert: true}, function (err, numReplaced) {
                 if (err) {
                     console.error('Database error. Adding new user failed', err);
@@ -25,13 +25,14 @@ export default class NisDbHandler {
         });
     }
 
-    static getSyncFolders(username) {
+    static getSyncFolders(username, clientId) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.nisDb.findOne({username: username}, (err, doc) => {
+            databases.nisDb.findOne({username: username, clientId: clientId}, (err, doc) => {
+                console.log("nis folders db entries: ", doc);
                 if (err) {
-                    this.handleError(result, 'Database error. Cannot read sync folders', err);
+                    this.handleError(result, 'Database error. Cannot read nis folders', err);
                 } else {
                     result.success = true;
                     result.data = doc ? doc.syncFolders : {};
