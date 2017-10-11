@@ -58,6 +58,10 @@ export default class PDPeer {
             this.signalBuffer.push(data);
         });
 
+        this.peerObj.on('error', (err) => {
+            console.log(err)
+        });
+
         // connected event
         this.peerObj.on('connect', () => {
             this.connected = true;
@@ -188,7 +192,6 @@ export default class PDPeer {
             }
         } else {
             this.currentReceiveProgress = (this.dataBuffer.byteLength / this.receiveInfo.info.size) * 100;
-            console.log(this.currentReceiveProgress)
             this.dataBuffer = Buffer.concat([this.dataBuffer, data]);
         }
     }

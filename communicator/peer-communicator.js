@@ -55,8 +55,9 @@ export default class PeerCommunicator {
                         }
                         break;
                 }
-            } else {
-
+            } else if (messageInfo.type = 'file') {
+                const uploadPath = path.join(process.env.PD_FOLDER_PATH, messageInfo.data.username, messageInfo.data.path, messageInfo.data.filename);
+                fs.writeFileSync(uploadPath, messageBuffer)
             }
         }
 
@@ -65,32 +66,25 @@ export default class PeerCommunicator {
 
     async sendLinkedFile(username, fileId) {
         const dbh = new ShareLinkDbHandler();
-        const fpath = '/Users/anuradhawick/Desktop/ACM_SigConf.pdf';
 
-        const file = fs.readFileSync(fpath);
-        const fileName = path.basename(fpath);
+        dbh.findPath(username, fileId).then(async (data) => {
+            if (_.isEmpty(data)) {
+                let msg = _.cloneDeep(pm.peerMessageError);
 
-        let msg = _.cloneDeep(pm.linkShareData);
+                msg.error = 'File could not be found';
+                msg.message = 'Please check the link or contact file owner';
+                this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
+            } else {
+                const filePath = path.join(process.env.PD_FOLDER_PATH, username,data.filePath);
+                const file = fs.readFileSync(filePath);
+                const fileName = path.basename(data.filePath);
 
-        msg.fileName = fileName;
-        this.messageToPeer(file, pm.type.file, msg);
-        // dbh.findPath(username, fileId).then(async (data) => {
-        //     if (_.isEmpty(data)) {
-        //         let msg = _.cloneDeep(pm.peerMessageError);
-        //
-        //         msg.error = 'File could not be found';
-        //         msg.message = 'Please check the link or contact file owner';
-        //         this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
-        //     } else {
-        //         const file = fs.readFileSync(data.filePath);
-        //         const fileName = path.basename(data.filePath);
-        //
-        //         let msg = _.cloneDeep(pm.linkShareData);
-        //
-        //         msg.fileName = fileName;
-        //         this.messageToPeer(file, pm.type.file, msg);
-        //     }
-        // });
+                let msg = _.cloneDeep(pm.linkShareData);
+
+                msg.fileName = fileName;
+                this.messageToPeer(file, pm.type.file, msg);
+            }
+        });
     }
 
     async sendFileFromPath(username, file, isMulti) {
