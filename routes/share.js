@@ -8,15 +8,35 @@ import ShareFolderDbHandler from "../db/share-folder-db";
 
 const router = express.Router();
 
-router.post('/list', CommonUtils.authorize, async function (req, res, next) {
+router.post('/list', async function (req, res, next) {
     res.set('Content-Type', 'application/json');
-
+console.log(req.body.username);
     let sharedFolders = await ShareFolderDbHandler.searchOwner(req.username);
     let receivedFolders = await ShareFolderDbHandler.searchRecievedFiles(req.username);
-    let result = FileExplorer.list(req.username, req.body.path, sharedFolders, receivedFolders).result;
-
+    let result = FileExplorer.list(req.body.username, req.body.path, sharedFolders, receivedFolders).result;
     console.log(result);
-    res.send(JSON.stringify(result));
+    res.send(JSON.stringify({"result": result}));
+});
+
+router.post('/getusers', async function (req, res, next) {
+    res.set('Content-Type', 'application/json');
+
+    let result = {};
+    if (req.body.issharedFolder) {
+        await FileExplorer.getCandidates(req.body.username, req.body.path).then((data) => {
+            if (data.success) {
+                result.candidates = data.candidates;
+            }
+        });
+    }
+
+    await FileExplorer.getUsers(req.body.username).then((data) => {
+        result.success = data.result.success;
+        result.users = data.result.users;
+        console.log(result);
+        res.send(JSON.stringify({"result":result}));
+    });
+
 });
 
 /**   {
@@ -26,7 +46,7 @@ router.post('/list', CommonUtils.authorize, async function (req, res, next) {
  *       "folder_name":"TestFolder"
  *   }
  **/
-router.post('/share', function (req, res, next) {
+router.post('/sharefolder', function (req, res, next) {
     console.log(req.body.candidates);
     res.set('Content-Type', 'application/json');
 
@@ -50,7 +70,7 @@ router.post('/share', function (req, res, next) {
                     "success": overallSuccess,
                     "msg": response
                 };
-
+                console.log(finalResult);
                 res.send(JSON.stringify(finalResult));
             }
         });

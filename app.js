@@ -4,6 +4,7 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+var cors = require('cors')
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -19,6 +20,8 @@ import NisEventListener from "./nis-engine/nis-event-listener";
 const app = express();
 
 // require('events').EventEmitter.defaultMaxListeners = Infinity;
+
+app.use(cors());
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
