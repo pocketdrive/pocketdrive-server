@@ -8,7 +8,6 @@ const bodyParser = require('body-parser');
 const users = require('./routes/users');
 const sync = require('./routes/sync');
 const share = require('./routes/share');
-const share_folder = require('./routes/share_folder');
 
 const ssdp = require('./utils/ssdp');
 
@@ -30,7 +29,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/user', users);
 app.use('/sync', sync);
 app.use('/share', share);
-app.use('/share_folder', share_folder);
 
 /**
  * Catch 404 and forward to error handler
