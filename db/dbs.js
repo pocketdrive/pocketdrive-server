@@ -7,7 +7,7 @@ export const syncMetaDb = new DataStore({filename: process.env.NE_DB_PATH_FILE_M
 export const syncDb = new DataStore({filename: process.env.NE_DB_PATH_SYNC, autoload: true});
 export const nisDb = new DataStore({filename: process.env.NE_DB_PATH_NIS, autoload: true});
 export const checkSumDB = new DataStore({filename: process.env.NE_DB_PATH_CHECKSUM, autoload: true});
-export const nisMetaDb = new DataStore({filename: process.env.NE_DB_PATH_NIS, autoload: true});
+// export const nisMetaDb = new DataStore({filename: process.env.NE_DB_PATH_NIS, autoload: true});
 export const shareDb = new DataStore({filename: process.env.NE_DB_PATH_SHARE_FOLDER, autoload: true});
 
 userDb.ensureIndex({ fieldName: 'username', unique: true });

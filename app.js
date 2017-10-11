@@ -62,8 +62,8 @@ async function main() {
     SyncRunner.onPdStart();
     // new Communicator().connectToCentralServer('PD12345');
 
-    new NisEventListener('dulaj', 'Downloads', ['1002']).start();
-    new NisCommunicator();
+    // new NisEventListener('dulaj', 'Downloads', ['1002']).start();
+    // new NisCommunicator();
 }
 
 main();

@@ -52,31 +52,18 @@ router.post('/getusers', async function (req, res, next) {
 router.post('/sharefolder', function (req, res, next) {
     console.log(req.body.candidates);
     res.set('Content-Type', 'application/json');
-
-    let response = [];
-    let itemCounter = 0;
-    let overallSuccess = true;
-
-    async.each(req.body.candidates, (candidate) => {
-        ShareFolder.share(req.body, candidate, (result) => {
-            itemCounter++;
-            if (!result.success) {
-                let msg = {};
-                overallSuccess = false;
-                msg.username = candidate.username;
-                msg.error = result.error;
-                response.push(msg);
-            }
-
-            if (itemCounter === req.body.candidates.length) {
-                let finalResult = {
-                    "success": overallSuccess,
-                    "msg": response
-                };
-                console.log(finalResult);
-                res.send(JSON.stringify(finalResult));
-            }
-        });
+    console.log(req.body.username,
+        req.body.path,
+        req.body.users,
+        req.body.candidates,
+        req.body.removedcandidates);
+    FileExplorer.shareFolderChooser(
+        req.body.username,
+        req.body.path,
+        req.body.users,
+        req.body.candidates,
+        req.body.removedcandidates).then((result)=>{
+        res.send(JSON.stringify(result));
     });
 
 });
