@@ -1,11 +1,11 @@
-import {Server, Socket} from 'fast-tcp';
+import {Server} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
 import * as _ from 'lodash';
 import mkdirp from 'mkdirp';
 import * as fse from 'fs-extra';
 
-import NisDBHandler from './nis-db';
+import NisDBHandler from '../db/nis-meta-db';
 
 /**
  * @author Anuradha Wickramarachchi

@@ -9,7 +9,7 @@ import hasher from 'folder-hash';
 import hasha from 'hasha';
 
 import {ChunkBasedSynchronizer} from "./chunk-based-synchronizer";
-import MetadataDBHandler from "../db/file-metadata-db";
+import MetadataDBHandler from "../db/sync-meta-db";
 import ChecksumDBHandler from "../db/checksum-db";
 
 import {SyncActions} from './sync-constants';

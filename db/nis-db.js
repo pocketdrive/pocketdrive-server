@@ -3,16 +3,16 @@
  */
 import * as databases from './dbs';
 
-export default class SyncDbHandler {
+export default class NisDbHandler {
 
-    static setSyncFolders(username, deviceId, folderNames) {
+    static setSyncFolders(username, clientId, syncFolders) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.update({username: username, deviceId: deviceId}, {
+            databases.nisDb.update({username: username, clientId: clientId}, {
                 username: username,
-                deviceId: deviceId,
-                syncFolders: folderNames
+                clientId: clientId,
+                syncFolders: syncFolders
             }, {upsert: true}, function (err, numReplaced) {
                 if (err) {
                     console.error('Database error. Adding new user failed', err);
@@ -25,13 +25,13 @@ export default class SyncDbHandler {
         });
     }
 
-    static getSyncFolders(username) {
+    static getSyncFolders(username, clientId) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.findOne({username: username}, (err, doc) => {
+            databases.nisDb.findOne({username: username, clientId: clientId}, (err, doc) => {
                 if (err) {
-                    this.handleError(result, 'Database error. Cannot read sync folders', err);
+                    this.handleError(result, 'Database error. Cannot read nis folders', err);
                 } else {
                     result.success = true;
                     result.data = doc ? doc.syncFolders : {};
@@ -42,11 +42,11 @@ export default class SyncDbHandler {
         });
     }
 
-    static getAllSyncingUsers() {
+    static getAllEntries() {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.syncDb.find({}, (err, doc) => {
+            databases.nisDb.find({}, (err, doc) => {
                 if (err) {
                     this.handleError(result, 'Database error. Read all failed.', err);
                     resolve(result);

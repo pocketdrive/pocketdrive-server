@@ -70,9 +70,6 @@ export default class FileExplorer {
                             type: 'dir',
                         }
                     }
-                    // console.log(filePath);
-                    // console.log(recievedFolders.data);
-                    // console.log(recievedFolders.success && recievedFolders.data.includes(filePath));
 
                     if (filePath.includes(rootShareFolderPath + '/') && recievedFolders.success) {
                         let res = true;
@@ -190,7 +187,7 @@ export default class FileExplorer {
                 }
             };
         } else {
-            // console.log(files);
+            console.log(files);
             return {
                 "result": files
             };
@@ -719,6 +716,7 @@ export default class FileExplorer {
         return new Promise((resolve) => {
             dbh.getAllUsers().then((result) => {
                 if (result.success) {
+                    console.log("Error");
                     let users = [];
                     _.each(result.data, (user) => {
                         if (user.username !== username) {

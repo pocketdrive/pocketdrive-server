@@ -11,6 +11,7 @@
     "async": "^2.5.0",
     "body-parser": "~1.17.1",
     "cookie-parser": "~1.4.3",
+    "cors": "^2.8.4",
     "debug": "~2.6.3",
     "decompress": "^4.2.0",
     "dotenv": "^4.0.0",
