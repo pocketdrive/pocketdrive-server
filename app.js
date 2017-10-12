@@ -4,7 +4,7 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-var cors = require('cors')
+const cors = require('cors');
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -15,8 +15,7 @@ const ssdp = require('./utils/ssdp');
 
 // import {Communicator} from "./communicator/communicator";
 import {SyncRunner} from "./sync-engine/sync-runner";
-import NisCommunicator from "./nis-engine/nis-communicator";
-import NisEventListener from "./nis-engine/nis-event-listener";
+import {NisRunner} from "./nis-engine/nis-runner";
 
 const app = express();
 
@@ -60,10 +59,8 @@ app.use(function (err, req, res, next) {
 async function main() {
     ssdp.broadcast();
     // SyncRunner.onPdStart();
+    NisRunner.onPdStart();
     // new Communicator().connectToCentralServer('PD12345');
-
-    // new NisEventListener('dulaj', 'Downloads', ['1002']).start();
-    // new NisCommunicator();
 }
 
 main();

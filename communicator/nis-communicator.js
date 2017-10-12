@@ -1,4 +1,4 @@
-import {Server, Socket} from 'fast-tcp';
+import {Server} from 'fast-tcp';
 import path from 'path';
 import fs from 'fs';
 import * as _ from 'lodash';

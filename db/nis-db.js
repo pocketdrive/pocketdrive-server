@@ -30,7 +30,6 @@ export default class NisDbHandler {
 
         return new Promise((resolve) => {
             databases.nisDb.findOne({username: username, clientId: clientId}, (err, doc) => {
-                console.log("nis folders db entries: ", doc);
                 if (err) {
                     this.handleError(result, 'Database error. Cannot read nis folders', err);
                 } else {
@@ -43,7 +42,7 @@ export default class NisDbHandler {
         });
     }
 
-    static getAllSyncingUsers() {
+    static getAllEntries() {
         let result = {success: false};
 
         return new Promise((resolve) => {
