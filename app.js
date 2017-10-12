@@ -60,7 +60,7 @@ async function main() {
     ssdp.broadcast();
     NisRunner.onPdStart();
 
-    new Communicator().connectToCentralServer(process.env.ID);
+    new Communicator().connectToCentralServer(process.env.PD_ID);
 }
 
 main();

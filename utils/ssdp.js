@@ -8,7 +8,7 @@ exports.broadcast = function () {
         sourcePort: 1900
     });
 
-    server.addUSN('urn:schemas-upnp-org:device:PocketDrive');
+    server.addUSN(`pdid:${process.env.PD_ID}`);
 
     server.start();
     console.log("PocketDrive service is broadcasting on " + require('ip').address());
