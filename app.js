@@ -12,7 +12,7 @@ const share_folder = require('./routes/share_folder');
 
 const ssdp = require('./utils/ssdp');
 
-// import {Communicator} from "./communicator/communicator";
+import {Communicator} from "./communicator/communicator";
 import {SyncRunner} from "./sync-engine/sync-runner";
 import NisCommunicator from "./nis-engine/nis-communicator";
 import NisEventListener from "./nis-engine/nis-event-listener";
@@ -57,7 +57,7 @@ app.use(function (err, req, res, next) {
 async function main() {
     ssdp.broadcast();
     SyncRunner.onPdStart();
-    // new Communicator().connectToCentralServer('PD12345');
+    new Communicator().connectToCentralServer(process.env.ID);
 
     new NisEventListener('dulaj', 'Downloads', ['1002']).start();
     new NisCommunicator();
