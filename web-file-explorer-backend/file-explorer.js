@@ -187,7 +187,6 @@ export default class FileExplorer {
                 }
             };
         } else {
-            console.log(files);
             return {
                 "result": files
             };
@@ -353,7 +352,7 @@ export default class FileExplorer {
             try {
                 fse.moveSync(itemPaths[0], path.join(target, path.basename(itemPaths[0])));
             } catch (e) {
-                console.log(e);
+                console.log('Error inside move(): ', e);
                 error = true;
                 errorMessage = e;
                 return false;
@@ -384,7 +383,6 @@ export default class FileExplorer {
         const folderPath = path.join(process.env.PD_FOLDER_PATH, username, pathResolver.pathGuard(newPath));
         const sharedFolderPath = path.join(process.env.PD_FOLDER_PATH, username, process.env.SHARED_FOLDER_NAME);
 
-        console.log(newPath);
         let error = false;
         let errorMessage = null;
         let ispossible = false;
@@ -543,7 +541,6 @@ export default class FileExplorer {
 
         return new Promise((resolve)=>{
             if (users && users.length > 0) {
-                console.log("Inside users")
                 let shareObj = {
                     username_from: username,
                     candidates: users,
@@ -564,10 +561,7 @@ export default class FileExplorer {
                 });
             }
 
-            console.log(!candidates);
-            console.log(removedCandidates);
             if(candidates && candidates.length>0){
-                console.log("Inside this");
                 let shareObj ={
                 	username_from:username,
                 	candidates:candidates,
@@ -575,7 +569,6 @@ export default class FileExplorer {
                 	folder_name:foldername
                    }
                 this.changeSharedFolderPermission(shareObj).then((result)=>{
-                    // console.log(result);
                     if(removedCandidates.length===0){
                         finalresult.push(result);
                         resolve({
@@ -588,11 +581,9 @@ export default class FileExplorer {
                         finalresult.push(result);
                     }
                 });
-                console.log("After users");
             }
 
             if(removedCandidates && removedCandidates.length>0){
-                console.log("Inside this");
                 let namearr = [];
                 for(let user of removedCandidates){
                     namearr.push(user.username);
@@ -614,7 +605,6 @@ export default class FileExplorer {
 
                     });
             }
-            console.log("finalresult");
         });
 
 
@@ -716,7 +706,6 @@ export default class FileExplorer {
         return new Promise((resolve) => {
             dbh.getAllUsers().then((result) => {
                 if (result.success) {
-                    console.log("Error");
                     let users = [];
                     _.each(result.data, (user) => {
                         if (user.username !== username) {
