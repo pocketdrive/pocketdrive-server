@@ -14,8 +14,8 @@ const router = express.Router();
 router.post('/list', async function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
-    let sharedFolders = await ShareFolderDbHandler.searchOwner(req.username);
-    let receivedFolders = await ShareFolderDbHandler.searchRecievedFiles(req.username);
+    let sharedFolders = await ShareFolderDbHandler.searchOwner(req.body.username);
+    let receivedFolders = await ShareFolderDbHandler.searchRecievedFiles(req.body.username);
     let result = FileExplorer.list(req.body.username, req.body.path, sharedFolders, receivedFolders).result;
     console.log(result);
     res.send(JSON.stringify({"result": result}));
