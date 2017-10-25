@@ -18,7 +18,7 @@ export class NisRunner {
         NisDbHandler.getAllEntries().then((users) => {
             _.each(users.data, (user) => {
                 _.each(user.syncFolders, (folder) => {
-                    new NisEventListener(user.username, folder.name, folder.syncDevices).start();
+                    new NisEventListener(user.username, folder.name, folder.syncDevices[0]).start();
                 });
             });
         });

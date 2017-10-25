@@ -4,6 +4,7 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -14,6 +15,7 @@ const ssdp = require('./utils/ssdp');
 
 import {Communicator} from "./communicator/communicator";
 import {SyncRunner} from "./sync-engine/sync-runner";
+import {NisRunner} from "./nis-engine/nis-runner";
 
 const app = express();
 
@@ -24,6 +26,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
 
 app.use('/user', users);
 app.use('/sync', sync);
@@ -55,7 +58,9 @@ app.use(function (err, req, res, next) {
 async function main() {
     ssdp.broadcast();
     SyncRunner.onPdStart();
-    new Communicator().connectToCentralServer('PD12345');
+    NisRunner.onPdStart();
+
+    new Communicator().connectToCentralServer(process.env.PD_ID);
 }
 
 main();

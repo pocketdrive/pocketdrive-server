@@ -21,13 +21,12 @@ const app = express();
 
 // require('events').EventEmitter.defaultMaxListeners = Infinity;
 
-app.use(cors());
-
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
 
 app.use('/user', users);
 app.use('/sync', sync);
@@ -58,6 +57,7 @@ app.use(function (err, req, res, next) {
 
 async function main() {
     ssdp.broadcast();
+    SyncRunner.onPdStart();
     NisRunner.onPdStart();
 
     new Communicator().connectToCentralServer(process.env.PD_ID);
