@@ -5,21 +5,23 @@ import streamToBuffer from 'stream-to-buffer';
 import stream from 'stream';
 import * as _ from 'lodash';
 
-import {SyncMessages, SyncActions, SyncActionMessages, SyncEvents} from '../sync-engine/sync-constants';
+import {SyncActionMessages, SyncActions, SyncEvents, SyncMessages} from '../sync-engine/sync-constants';
 import * as syncActions from '../sync-engine/sync-actions';
-import {modifyExistingFile} from "../sync-engine/sync-actions";
-import {createOrModifyFile} from "../sync-engine/sync-actions";
-import {getFileChecksum} from "../sync-engine/sync-actions";
-import {afterSyncFile} from "../sync-engine/sync-actions";
+import {
+    afterSyncFile,
+    checkExistence,
+    createOrModifyFile,
+    deleteMetadataEntry,
+    getFileChecksum,
+    getFolderChecksum,
+    getSyncedChecksum,
+    isFolderEmpty,
+    modifyExistingFile,
+    setSyncedChecksum
+} from '../sync-engine/sync-actions';
 import {ChunkBasedSynchronizer} from "../sync-engine/chunk-based-synchronizer";
-import {deleteMetadataEntry} from "../sync-engine/sync-actions";
-import {setSyncedChecksum} from "../sync-engine/sync-actions";
 import {getCheckSum} from "../utils/meta-data";
-import {getSyncedChecksum} from "../sync-engine/sync-actions";
 import {CommonUtils} from "../utils/common";
-import {checkExistence} from "../sync-engine/sync-actions";
-import {isFolderEmpty} from "../sync-engine/sync-actions";
-import {getFolderChecksum} from "../sync-engine/sync-actions";
 import MetadataDBHandler from "../db/sync-meta-db";
 import {SyncRunner} from "../sync-engine/sync-runner";
 
@@ -210,9 +212,10 @@ export default class SyncCommunicator {
                     console.log('Sync action [SERVER_TO_PD_SYNC]');
                     this.clientStats[socket.id]['username'] = json.username;
 
-                    if (!SyncRunner.eventListeners[this.clientStats[socket.id].username].isWatcherRunning) {
+                    if (SyncRunner.eventListeners[this.clientStats[socket.id].username] &&
+                        !SyncRunner.eventListeners[this.clientStats[socket.id].username].isWatcherRunning) {
                         this.doSync(this.clientStats[socket.id], callBack);
-                    } else{
+                    } else {
                         callBack();
                     }
 
