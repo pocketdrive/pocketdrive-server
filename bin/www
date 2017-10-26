@@ -86,3 +86,11 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+
+const sudo = require('sudo');
+const options = {
+    cachePassword: true,
+    prompt: 'Enter root password: ',
+    spawnOptions: { /* other options for spawn */ }
+};

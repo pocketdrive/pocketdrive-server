@@ -1,10 +1,17 @@
 import {exec} from 'child_process';
+const sudo =  require('sudo');
 
 import * as  utils from '../utils/file';
 import nodePath from 'path';
 
 import UserDbHandler from '../db/user-db';
 import ShareFolderDbHandler from "../db/share-folder-db";
+
+const options = {
+    cachePassword: true,
+    prompt: 'Enter root password: ',
+    spawnOptions: {/* other options for spawn */}
+};
 
 const dbh = new UserDbHandler();
 
@@ -59,65 +66,72 @@ export default class ShareFolder {
                                     } else {
 
                                         if (candidate.permission === "rw") {
-                                            let mountCmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" --bind';
+                                            console.log('<<<<<<<<<<<< command', 'mount', src, dest, '--bind');
 
-                                            console.log(mountCmd);
-                                            exec(mountCmd, function (error, stdout, stderr) {
-                                                if (error) {
-                                                    result['success'] = false;
-                                                    result['error'] = 'Mounting shared folder failed';
-                                                    console.error('Mounting shared folder failed');
-                                                    console.error(error);
-                                                    callback(result);
-                                                } else {
-                                                    console.log("Trying to enter into the database");
+                                            const child = sudo(['mount', src, dest, '--bind'], options);
+
+                                            child.stdout.on('data', (data) => {
+                                                console.log("Trying to enter into the database");
+                                                candidate.destpath = dest;
+                                                ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
+                                                    if (result.success) {
+                                                        result['success'] = true;
+                                                        callback(result);
+                                                        console.log("successful database entry");
+                                                    } else {
+                                                        console.log("Error in inserting into database");
+                                                        callback(result);
+                                                    }
+                                                })
+                                            });
+
+                                            child.stderr.on('data', (error) => {
+                                                error = error.toString();
+                                                result['success'] = false;
+                                                result['error'] = 'Mounting shared folder failed';
+                                                console.error('Mounting shared folder failed');
+                                                console.error(error.toString());
+                                                callback(result);
+                                            });
+
+                                        } else {
+                                            const child = sudo(['mount', src, dest, '-o', 'bind'], options);
+
+                                            child.stdout.on('data', (data) => {
+                                                const child = sudo(['mount', dest, '-o', 'remount', 'ro', 'bind'], options);
+
+                                                child.stdout.on('data', (data) => {
                                                     candidate.destpath = dest;
                                                     ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                         if (result.success) {
                                                             result['success'] = true;
                                                             callback(result);
-                                                            console.log("successful database entry");
                                                         } else {
-                                                            console.log("Error in inserting into database");
                                                             callback(result);
                                                         }
-                                                    })
+                                                    });
+                                                });
 
-                                                }
-                                            });
-                                        } else {
-                                            let mountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" -o bind';
-
-                                            exec(mountcmd, function (error, stdout, stderr) {
-                                                if (error) {
+                                                child.stderr.on('data', (error) => {
+                                                    error = error.toString();
                                                     result['success'] = false;
                                                     result['error'] = 'Mounting shared folder failed';
                                                     console.error('Mounting shared folder failed');
                                                     console.error(error);
                                                     callback(result);
-                                                } else {
-                                                    let remountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
-                                                    exec(remountcmd, function (error, stdout, stderr) {
-                                                        if (error) {
-                                                            result['success'] = false;
-                                                            result['error'] = 'Mounting shared folder failed';
-                                                            console.error('Mounting shared folder failed');
-                                                            console.error(error);
-                                                            callback(result);
-                                                        } else {
-                                                            candidate.destpath = dest;
-                                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
-                                                                if (result.success) {
-                                                                    result['success'] = true;
-                                                                    callback(result);
-                                                                } else {
-                                                                    callback(result);
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                                }
+                                                });
+
                                             });
+
+                                            child.stderr.on('data', (error) => {
+                                                error = error.toString();
+                                                result['success'] = false;
+                                                result['error'] = 'Mounting shared folder failed';
+                                                console.error('Mounting shared folder failed');
+                                                console.error(error);
+                                                callback(result);
+                                            });
+
                                         }
 
                                     }
@@ -162,41 +176,42 @@ export default class ShareFolder {
                         let user = result.user;
                         let destpath = result.user.destpath;
 
-                        let umountcmd = 'sudo umount ' + `${destpath}`;
-                        console.log(umountcmd);
-                        exec(umountcmd, (error, stdout, stderror) => {
-                            if (error) {
-                                result['success'] = false;
-                                result['error'] = 'Error in unmounting the shared folder';
-                                callback(result);
-                            } else {
+                        const child = sudo(['umount', destpath], options);
 
-                                let deletecmd = 'sudo rm -rf ' + `${destpath}`;
-                                console.log(deletecmd);
+                        child.stdout.on('data', function (data) {
+                            const child = sudo(['rm', '-rf', destpath], options);
 
-                                exec(deletecmd, (error, stdout, stderror) => {
-                                    if (error) {
-                                        result['success'] = error;
-                                        result['error'] = 'Error in deleting shared file';
+                            child.stdout.on('data', function (data) {
+                                console.log("eliminating candidate");
+
+                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                    console.log(result);
+                                    if (!result.success) {
+                                        result['success'] = false;
+                                        result['error'] = "Error in eliminating user";
                                         callback(result);
                                     } else {
-                                        console.log("eliminating candidate");
-                                        console.log(user);
-                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                            console.log(result);
-                                            if (!result.success) {
-                                                result['success'] = false;
-                                                result['error'] = "Error in eliminating user"
-                                                callback(result);
-                                            } else {
-                                                result['success'] = true;
-                                                callback(result);
-                                            }
-
-                                        });
+                                        result['success'] = true;
+                                        callback(result);
                                     }
+
                                 });
-                            }
+                            });
+
+                            child.stderr.on('data', function (error) {
+                                error = error.toString();
+                                result['success'] = error;
+                                result['error'] = 'Error in deleting shared file';
+                                callback(result);
+                            });
+
+                        });
+
+                        child.stderr.on('data', function (error) {
+                            error = error.toString();
+                            result['success'] = false;
+                            result['error'] = 'Error in unmounting the shared folder';
+                            callback(result);
                         });
                     }
 
@@ -221,84 +236,88 @@ export default class ShareFolder {
 
                 if (candidate.permission !== user.permission) {
 
-                    let umountcmd = 'sudo umount ' + `${dest}`;
+                    const child = sudo(['umount', dest], options);
 
-                    console.log(umountcmd);
-                    exec(umountcmd, (error, stdout, stderror) => {
-                        if (error) {
-                            result['success'] = error;
-                            result['error'] = 'Error in unmounting shared file';
-                            console.log(error);
-                            callback(result);
+                    child.stdout.on('data', function (data) {
+                        if (candidate.permission === 'r') {
+                            const child = sudo(['mount', src, dest, '-o', 'bind'], options);
+
+                            child.stdout.on('data', function (data) {
+                                const child = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
+
+                                child.stdout.on('data', function (data) {
+                                    ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                        if (!result.success) {
+                                            callback(result)
+                                        } else {
+                                            user.permission = "r";
+                                            ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                                if (!result.success) {
+                                                    callback(result);
+                                                } else {
+                                                    result['success'] = true;
+                                                    callback(result);
+                                                }
+                                            });
+                                        }
+                                    });
+                                });
+
+                                child.stderr.on('data', function (error) {
+                                    error = error.toString();
+                                    result['success'] = false;
+                                    result['error'] = 'Error in remounting shared file in read mode';
+                                    console.log(error);
+                                    callback(result);
+                                });
+
+                            });
+
+                            child.stderr.on('data', function (error) {
+                                error = error.toString();
+                                result['success'] = false;
+                                result['error'] = 'Error in mounting shared file in read mode';
+                                console.log(error);
+                                callback(result);
+                            });
+
                         } else {
+                            const child = sudo(['mount', src, dest, '--bind'], options);
 
-                            if (candidate.permission === 'r') {
-                                let rmountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" -o bind';
-                                console.log(rmountcmd);
-                                exec(rmountcmd, (error, stdout, stderror) => {
-                                    if (error) {
-                                        result['success'] = false;
-                                        result['error'] = 'Error in mounting shared file in read mode';
-                                        console.log(error);
-                                        callback(result);
+                            child.stdout.on('data', function (data) {
+                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                    if (!result.success) {
+                                        callback(result)
                                     } else {
-                                        let rremountcmd = 'sudo mount \"' + `${dest}` + '\" -o remount,ro,bind';
-                                        exec(rremountcmd, (error, stdout, stderror) => {
-                                            if (error) {
-                                                result['success'] = false;
-                                                result['error'] = 'Error in remounting shared file in read mode';
-                                                console.log(error);
+                                        user.permission = "rw";
+                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                            if (!result.success) {
                                                 callback(result);
                                             } else {
-                                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                                    if (!result.success) {
-                                                        callback(result)
-                                                    } else {
-                                                        user.permission = "r";
-                                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                                            if (!result.success) {
-                                                                callback(result);
-                                                            } else {
-                                                                result['success'] = true;
-                                                                callback(result);
-                                                            }
-                                                        });
-                                                    }
-                                                });
+                                                result['success'] = true;
+                                                callback(result);
                                             }
                                         });
-
                                     }
                                 });
-                            } else {
-                                let rwmountcmd = 'sudo mount \"' + `${src}` + '\" \"' + `${dest}` + '\" --bind';
-                                exec(rwmountcmd, (error, stdout, stderror) => {
-                                    if (error) {
-                                        result['success'] = false;
-                                        result['error'] = 'Error in deleting shared file';
-                                        callback(result);
-                                    } else {
-                                        ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                            if (!result.success) {
-                                                callback(result)
-                                            } else {
-                                                user.permission = "rw";
-                                                ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                                    if (!result.success) {
-                                                        callback(result);
-                                                    } else {
-                                                        result['success'] = true;
-                                                        callback(result);
-                                                    }
-                                                });
-                                            }
-                                        });
+                            });
 
-                                    }
-                                });
-                            }
+                            child.stderr.on('data', function (error) {
+                                error = error.toString();
+                                result['success'] = false;
+                                result['error'] = 'Error in deleting shared file';
+                                callback(result);
+                            });
 
                         }
+                    });
+
+                    child.stderr.on('data', function (error) {
+                        error = error.toString();
+                        result['success'] = error;
+                        result['error'] = 'Error in unmounting shared file';
+                        console.log(error);
+                        callback(result);
                     });
 
                 } else {
