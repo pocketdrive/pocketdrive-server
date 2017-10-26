@@ -85,7 +85,7 @@ export default class NisEventListener {
                 deviceID: this.deviceID,
                 path: newPath,
                 type: ChangeType.DIR,
-                current_cs: metaUtils.folderCheckSumSync(change.addedFolders[i]),
+                current_cs: metaUtils.folderCheckSumSync(change.addedFolders[0]),
                 oldPath: oldPath,
                 sequence_id: NisEventListener.sequenceID++
             });
