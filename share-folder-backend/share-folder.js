@@ -68,9 +68,24 @@ export default class ShareFolder {
                                         if (candidate.permission === "rw") {
                                             console.log('<<<<<<<<<<<< command', 'mount', src, dest, '--bind');
 
-                                            const child = sudo(['mount', src, dest, '--bind'], options);
+                                            const child = sudo(['mount', src, dest, '--bind'], options)
 
-                                            child.stdout.on('data', (data) => {
+                                            //////
+                                            console.log("Trying to enter into the database");
+                                            candidate.destpath = dest;
+                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
+                                                if (result.success) {
+                                                    result['success'] = true;
+                                                    callback(result);
+                                                    console.log("successful database entry");
+                                                } else {
+                                                    console.log("Error in inserting into database");
+                                                    callback(result);
+                                                }
+                                            })
+                                            ///////
+
+                                            child.stdout.on('data', () => {
                                                 console.log("Trying to enter into the database");
                                                 candidate.destpath = dest;
                                                 ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
@@ -95,9 +110,34 @@ export default class ShareFolder {
                                             });
 
                                         } else {
+                                            console.log('read only >>>>>>>');
+                                            console.log('mount', src, dest, '-o', 'bind');
                                             const child = sudo(['mount', src, dest, '-o', 'bind'], options);
 
+                                            ///////////
+                                            const child2 = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
+                                            candidate.destpath = dest;
+                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
+                                                if (result.success) {
+                                                    result['success'] = true;
+                                                    callback(result);
+                                                } else {
+                                                    callback(result);
+                                                }
+                                            });
+
+                                            child2.stderr.on('data', (error) => {
+                                                error = error.toString();
+                                                result['success'] = false;
+                                                result['error'] = 'Mounting shared folder failed';
+                                                console.error('Mounting shared folder failed');
+                                                console.error(error);
+                                                callback(result);
+                                            });
+                                            //////////////
+
                                             child.stdout.on('data', (data) => {
+                                                console.log("insert >>>>>>>>>>>");
                                                 const child = sudo(['mount', dest, '-o', 'remount', 'ro', 'bind'], options);
 
                                                 child.stdout.on('data', (data) => {
@@ -181,6 +221,23 @@ export default class ShareFolder {
                         child.stdout.on('data', function (data) {
                             const child = sudo(['rm', '-rf', destpath], options);
 
+                            //////////////////
+                            console.log("eliminating candidate");
+
+                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                console.log(result);
+                                if (!result.success) {
+                                    result['success'] = false;
+                                    result['error'] = "Error in eliminating user";
+                                    callback(result);
+                                } else {
+                                    result['success'] = true;
+                                    callback(result);
+                                }
+
+                            });
+                            /////////////
+
                             child.stdout.on('data', function (data) {
                                 console.log("eliminating candidate");
 
@@ -245,6 +302,24 @@ export default class ShareFolder {
                             child.stdout.on('data', function (data) {
                                 const child = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
 
+                                //////////
+                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                    if (!result.success) {
+                                        callback(result)
+                                    } else {
+                                        user.permission = "r";
+                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                            if (!result.success) {
+                                                callback(result);
+                                            } else {
+                                                result['success'] = true;
+                                                callback(result);
+                                            }
+                                        });
+                                    }
+                                });
+                                ////////////////
+
                                 child.stdout.on('data', function (data) {
                                     ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
                                         if (!result.success) {
@@ -283,6 +358,24 @@ export default class ShareFolder {
 
                         } else {
                             const child = sudo(['mount', src, dest, '--bind'], options);
+
+                            ///////////
+                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                if (!result.success) {
+                                    callback(result)
+                                } else {
+                                    user.permission = "rw";
+                                    ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                        if (!result.success) {
+                                            callback(result);
+                                        } else {
+                                            result['success'] = true;
+                                            callback(result);
+                                        }
+                                    });
+                                }
+                            });
+                            ///////////////
 
                             child.stdout.on('data', function (data) {
                                 ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
