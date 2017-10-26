@@ -1,6 +1,7 @@
 import {exec} from 'child_process';
 
 import * as  utils from '../utils/file';
+import nodePath from 'path';
 
 import UserDbHandler from '../db/user-db';
 import ShareFolderDbHandler from "../db/share-folder-db";
@@ -25,8 +26,8 @@ export default class ShareFolder {
             } else {
                 delete result.data;
                 let src = path;
-                let dest = process.env.PD_FOLDER_PATH + '/' + candidate.username + '/' + process.env.SHARED_FOLDER_NAME + '/' + username_from;
-
+                let dest = nodePath.join(process.env.PD_FOLDER_PATH, candidate.username, process.env.SHARED_FOLDER_NAME, username_from);
+                console.log(dest);
                 if (utils.isDirectoryExists(src)) {
 
                     let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';

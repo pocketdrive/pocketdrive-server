@@ -352,7 +352,6 @@ export default class FileExplorer {
             try {
                 fse.moveSync(itemPaths[0], path.join(target, path.basename(itemPaths[0])));
             } catch (e) {
-                console.log('Error inside move(): ', e);
                 error = true;
                 errorMessage = e;
                 return false;

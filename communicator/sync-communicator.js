@@ -207,7 +207,7 @@ export default class SyncCommunicator {
                     break;
 
                 case SyncActionMessages.serverToPdSync:
-                    console.log('Sync action [SERVER_TO_PD_SYNC]');
+                    // console.log('Sync action [SERVER_TO_PD_SYNC]');
                     this.clientStats[socket.id]['username'] = json.username;
 
                     if (!SyncRunner.eventListeners[this.clientStats[socket.id].username].isWatcherRunning) {
