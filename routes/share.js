@@ -52,11 +52,6 @@ router.post('/getusers', async function (req, res, next) {
 router.post('/sharefolder', function (req, res, next) {
     console.log(req.body.candidates);
     res.set('Content-Type', 'application/json');
-    console.log(req.body.username,
-        req.body.path,
-        req.body.users,
-        req.body.candidates,
-        req.body.removedcandidates);
     FileExplorer.shareFolderChooser(
         req.body.username,
         req.body.path,
