@@ -30,6 +30,7 @@ export default class NisCommunicator {
                 // const fullPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
                 switch (json.type) {
                     case 'getEvents':
+                        // TODO filter by username and otherdevice id
                         NisDBHandler.getAllEvents().then((data) => {
                             callBack(data)
                         });
