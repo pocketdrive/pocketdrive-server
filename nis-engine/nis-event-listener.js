@@ -19,6 +19,7 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class NisEventListener {
 
+    static ignoreEvents  = []; // fullpath
     static sequenceID = 0;
 
     constructor(username, folder, deviceID) {
@@ -38,6 +39,20 @@ export default class NisEventListener {
         NisDBHandler.getNextSequenceID().then((result) => {
             NisEventListener.sequenceID = result.data;
         });
+    }
+
+    shouldIgnore(path) {
+        const shouldIgnore =  _.findIndex(NisEventListener.ignoreEvents, (obj) => {
+            return obj === path;
+        }) !== -1;
+
+        if(shouldIgnore) {
+            _.remove(NisEventListener.ignoreEvents, (obj) =>{
+               return obj === path;
+            });
+        }
+
+        return shouldIgnore;
     }
 
     start() {
@@ -69,6 +84,21 @@ export default class NisEventListener {
                 change[changeListName][index] = path.join(this.baseDirectory, relativePath);
             });
         });
+
+        const removables = [];
+
+        _.each(change, (changeList, changeListName) => {
+            _.each(changeList, (relativePath, index) => {
+                if(this.shouldIgnore(change[changeListName][index])){
+                    removables.push({changeListName, index});
+                }
+            });
+        });
+
+        _.each(removables, (rmObj) => {
+            change[rmObj[0]].splice(rmObj[1], 1);
+        });
+
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory

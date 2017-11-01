@@ -6,6 +6,7 @@ import mkdirp from 'mkdirp';
 import * as fse from 'fs-extra';
 
 import NisDBHandler from '../db/nis-meta-db';
+import NisEventListener from '../nis-engine/nis-event-listener';
 
 /**
  * @author Anuradha Wickramarachchi
@@ -54,6 +55,9 @@ export default class NisCommunicator {
                     case 'rename':
                         const oldPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
                         const newPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
+                        if(json.ignore) {
+                            NisEventListener.ignoreEvents.push(filepath);
+                        }
 
                         try {
                             fs.renameSync(oldPath, newPath);
@@ -64,6 +68,9 @@ export default class NisCommunicator {
                     case 'delete':
                         const deletePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
+                        if(json.ignore) {
+                            NisEventListener.ignoreEvents.push(filepath);
+                        }
                         if (fs.existsSync(deletePath)) {
                             if (fs.statSync(deletePath).isDirectory()) {
                                 fse.removeSync(deletePath);
@@ -81,6 +88,10 @@ export default class NisCommunicator {
                 case 'new':
                     const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
+                    if(json.ignore) {
+                        NisEventListener.ignoreEvents.push(filepath);
+                    }
+
                     if (json.fileType === 'dir') {
                         this.preparePath(filepath);
                     } else if (json.fileType === 'file') {
@@ -93,6 +104,10 @@ export default class NisCommunicator {
                 case 'update':
                     // This is always a file, cannot be a folder
                     const filepathUpdate = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
+                    if(json.ignore) {
+                        NisEventListener.ignoreEvents.push(filepathUpdate);
+                    }
+
                     this.preparePath(path.dirname(filepathUpdate));
                     const writeStreamUpdate = fs.createWriteStream(filepathUpdate);
 
