@@ -85,18 +85,19 @@ export default class NisEventListener {
             });
         });
 
-        const removables = [];
-
         _.each(change, (changeList, changeListName) => {
+            const removables = [];
             _.each(changeList, (relativePath, index) => {
                 if(this.shouldIgnore(change[changeListName][index])){
-                    removables.push({changeListName, index});
+                    removables.push(change[changeListName][index]);
                 }
             });
-        });
+            changeList[changeListName] = _.filter(changeList[changeListName], (obj) => {
+                return _.findIndex(removables, (obj1) => {
+                    return obj === obj1;
+                }) === -1;
+            });
 
-        _.each(removables, (rmObj) => {
-            change[rmObj[0]].splice(rmObj[1], 1);
         });
 
 
