@@ -56,7 +56,8 @@ export default class NisCommunicator {
                         const oldPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
                         const newPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
                         if(json.ignore) {
-                            NisEventListener.ignoreEvents.push(filepath);
+                            NisEventListener.ignoreEvents.push(oldPath);
+                            NisEventListener.ignoreEvents.push(newPath);
                         }
 
                         try {

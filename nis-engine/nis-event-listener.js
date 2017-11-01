@@ -92,14 +92,14 @@ export default class NisEventListener {
                     removables.push(change[changeListName][index]);
                 }
             });
-            changeList[changeListName] = _.filter(changeList[changeListName], (obj) => {
+            change[changeListName] = _.filter(changeList[changeListName], (obj) => {
                 return _.findIndex(removables, (obj1) => {
                     return obj === obj1;
-                }) === -1;
+                }) !== -1;
             });
 
-        });
 
+        });
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
