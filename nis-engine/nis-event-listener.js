@@ -18,12 +18,13 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class NisEventListener {
 
+    static ignoreEvents  = []; // fullpath
     static sequenceID = 0;
 
     constructor(username, folder, deviceID) {
         this.pdPath = process.env.PD_FOLDER_PATH;
         this.username = username;
-        this.deviceID = deviceID;
+        this.otherDeviceID = deviceID;
         this.folder = folder;
 
         this.pathPrefix = path.resolve(this.pdPath, this.username);
@@ -37,6 +38,20 @@ export default class NisEventListener {
         NisDBHandler.getNextSequenceID().then((result) => {
             NisEventListener.sequenceID = result.data;
         });
+    }
+
+    shouldIgnore(path) {
+        const shouldIgnore =  _.findIndex(NisEventListener.ignoreEvents, (obj) => {
+            return obj === path;
+        }) !== -1;
+
+        if(shouldIgnore) {
+            _.remove(NisEventListener.ignoreEvents, (obj) =>{
+               return obj === path;
+            });
+        }
+
+        return shouldIgnore;
     }
 
     start() {
@@ -69,6 +84,22 @@ export default class NisEventListener {
             });
         });
 
+        _.each(change, (changeList, changeListName) => {
+            const removables = [];
+            _.each(changeList, (relativePath, index) => {
+                if(this.shouldIgnore(change[changeListName][index])){
+                    removables.push(change[changeListName][index]);
+                }
+            });
+            change[changeListName] = _.filter(changeList[changeListName], (obj) => {
+                return _.findIndex(removables, (obj1) => {
+                    return obj === obj1;
+                }) !== -1;
+            });
+
+
+        });
+
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
             console.log("Watcher [DIR][RENAME] ", change.removedFolders[0], ' --> ', change.addedFolders[0]);
@@ -81,7 +112,7 @@ export default class NisEventListener {
             NisDBHandler.insertEntry({
                 action: SyncEvents.RENAME,
                 user: this.username,
-                deviceID: this.deviceID,
+                otherDeviceID: this.otherDeviceID,
                 path: newPath,
                 type: ChangeType.DIR,
                 current_cs: metaUtils.folderCheckSumSync(change.addedFolders[0]),
@@ -99,7 +130,7 @@ export default class NisEventListener {
             NisDBHandler.updateEntry(this.username, oldPath, {
                 action: SyncEvents.RENAME,
                 user: this.username,
-                deviceID: this.deviceID,
+                otherDeviceID: this.otherDeviceID,
                 type: ChangeType.FILE,
                 path: newPath,
                 oldPath: oldPath,
@@ -115,7 +146,7 @@ export default class NisEventListener {
                 NisDBHandler.insertEntry({
                     action: SyncEvents.NEW,
                     user: this.username,
-                    deviceID: this.deviceID,
+                    otherDeviceID: this.otherDeviceID,
                     path: _.replace(change.addedFolders[i], this.pathPrefix, ''),
                     type: ChangeType.DIR,
                     current_cs: metaUtils.folderCheckSumSync(change.addedFolders[i]),
@@ -132,7 +163,7 @@ export default class NisEventListener {
                 NisDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.NEW,
                     user: this.username,
-                    deviceID: this.deviceID,
+                    otherDeviceID: this.otherDeviceID,
                     path: newPath,
                     type: ChangeType.FILE,
                     current_cs: metaUtils.getCheckSum(change.addedFiles[i]),
@@ -149,7 +180,7 @@ export default class NisEventListener {
                 NisDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
-                    deviceID: this.deviceID,
+                    otherDeviceID: this.otherDeviceID,
                     path: newPath,
                     type: ChangeType.FILE,
                     sequence_id: NisEventListener.sequenceID++
@@ -165,7 +196,7 @@ export default class NisEventListener {
                 NisDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.DELETE,
                     user: this.username,
-                    deviceID: this.deviceID,
+                    otherDeviceID: this.otherDeviceID,
                     path: newPath,
                     type: ChangeType.DIR,
                     sequence_id: NisEventListener.sequenceID++
@@ -181,7 +212,7 @@ export default class NisEventListener {
                 NisDBHandler.updateEntry(this.username, newPath, {
                     action: SyncEvents.MODIFY,
                     user: this.username,
-                    deviceID: this.deviceID,
+                    otherDeviceID: this.otherDeviceID,
                     path: newPath,
                     type: ChangeType.FILE,
                     current_cs: metaUtils.getCheckSum(change.modifiedFiles[i]),
