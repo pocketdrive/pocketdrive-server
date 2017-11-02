@@ -39,7 +39,6 @@ export default class ShareFolder {
 
                     let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';
 
-                    console.log(createDirCmd);
                     exec(createDirCmd, function (error, stdout, stderr) {
                         if (error) {
                             result['success'] = false;
@@ -66,9 +65,9 @@ export default class ShareFolder {
                                     } else {
 
                                         if (candidate.permission === "rw") {
-                                            console.log('<<<<<<<<<<<< command', 'mount', src, dest, '--bind');
+                                            console.log('command', 'mount', src, dest, '--bind');
 
-                                            const child = sudo(['mount', src, dest, '--bind'], options)
+                                            const child = sudo(['mount', src, dest, '--bind'], options);
 
                                             //////
                                             console.log("Trying to enter into the database");

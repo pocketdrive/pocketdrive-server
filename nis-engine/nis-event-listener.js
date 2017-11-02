@@ -6,7 +6,6 @@ import * as _ from 'lodash';
 
 import NisDBHandler from '../db/nis-meta-db';
 import * as metaUtils from '../utils/meta-data';
-import {getFolderChecksum} from "../sync-engine/sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";
 // import {SyncRunner} from "./sync-runner";
 
@@ -57,7 +56,7 @@ export default class NisEventListener {
             this.changes.push(change);
 
             // if (this.serializeLock === 0) {
-                this.consume(this.changes.shift());
+            this.consume(this.changes.shift());
             // }
         });
     }
