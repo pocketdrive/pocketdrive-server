@@ -54,7 +54,6 @@ export default class ShareFolder {
 
                                 createDirCmd = 'mkdir ' + '\"' + `${dest}` + '\"';
 
-                                console.log(createDirCmd);
                                 exec(createDirCmd, function (error, stdout, stderr) {
                                     if (error) {
                                         result['success'] = false;
@@ -67,10 +66,10 @@ export default class ShareFolder {
                                         if (candidate.permission === "rw") {
                                             console.log('command', 'mount', src, dest, '--bind');
 
-                                            const child = sudo(['mount', src, dest, '--bind'], options);
+                                            const child = sudo(['mount', src, dest, '--bind', '-v'], options);
 
                                             //////
-                                            console.log("Trying to enter into the database");
+                                            /*console.log("Trying to enter into the database");
                                             candidate.destpath = dest;
                                             ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                 if (result.success) {
@@ -81,7 +80,7 @@ export default class ShareFolder {
                                                     console.log("Error in inserting into database");
                                                     callback(result);
                                                 }
-                                            })
+                                            })*/
                                             ///////
 
                                             child.stdout.on('data', () => {
@@ -111,10 +110,10 @@ export default class ShareFolder {
                                         } else {
                                             console.log('read only >>>>>>>');
                                             console.log('mount', src, dest, '-o', 'bind');
-                                            const child = sudo(['mount', src, dest, '-o', 'bind'], options);
+                                            const child = sudo(['mount', src, dest, '-o', '--bind', '-v'], options);
 
                                             ///////////
-                                            const child2 = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
+                                            /*const child2 = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
                                             candidate.destpath = dest;
                                             ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                 if (result.success) {
@@ -132,12 +131,12 @@ export default class ShareFolder {
                                                 console.error('Mounting shared folder failed');
                                                 console.error(error);
                                                 callback(result);
-                                            });
+                                            });*/
                                             //////////////
 
                                             child.stdout.on('data', (data) => {
                                                 console.log("insert >>>>>>>>>>>");
-                                                const child = sudo(['mount', dest, '-o', 'remount', 'ro', 'bind'], options);
+                                                const child = sudo(['mount', dest, '-o', 'remount', 'ro', 'bind', 'v'], options);
 
                                                 child.stdout.on('data', (data) => {
                                                     candidate.destpath = dest;
