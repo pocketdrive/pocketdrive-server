@@ -68,7 +68,7 @@ router.post('/sharefolder', function (req, res, next) {
 *	    "folder_name":"TestFolder"
 *    }
  **/
-router.post('/unshare', function (req, res, next) {
+/*router.post('/unshare', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
     let response = [];
@@ -95,7 +95,7 @@ router.post('/unshare', function (req, res, next) {
             }
         });
     });
-});
+});*/
 
 /**  {
 *	"username_from":"anuradha",

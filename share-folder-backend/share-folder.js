@@ -1,5 +1,6 @@
 import {exec} from 'child_process';
-const sudo =  require('sudo');
+
+const sudo = require('sudo');
 
 import * as  utils from '../utils/file';
 import nodePath from 'path';
@@ -66,8 +67,6 @@ export default class ShareFolder {
                                     } else {
 
                                         if (candidate.permission === "rw") {
-                                            console.log('<<<<<<<<<<<< command', 'mount', src, dest, '--bind');
-
                                             const child = sudo(['mount', src, dest, '--bind', '-v'], options);
 
                                             child.stdout.on('data', (data) => {
@@ -98,8 +97,7 @@ export default class ShareFolder {
                                             const child = sudo(['mount', src, dest, '-o', 'bind', '-v'], options);
 
                                             child.stdout.on('data', (data) => {
-                                                console.log("dest: ", dest);
-                                                const child = sudo(['mount', '-o', 'remount,ro','--bind', '-v', dest], options);
+                                                const child = sudo(['mount', '-o', 'remount,ro', '--bind', '-v', dest], options);
 
                                                 child.stdout.on('data', (data) => {
                                                     candidate.destpath = dest;
@@ -160,7 +158,6 @@ export default class ShareFolder {
 
 
     static unshare(shareObj, candidate, callback) {
-
         let userObj = {username: candidate};
         dbh.searchUser(userObj).then((result) => {
             if (!result.success) {
@@ -179,10 +176,11 @@ export default class ShareFolder {
 
                         const child = sudo(['umount', destpath, '-v'], options);
 
-                        child.stdout.on('data', function (data) {
+                        child.stdout.on('data', (data) => {
+                            console.log('unmounted >>>>>>>>>>>', data.toString());
                             const child = sudo(['rm', '-rf', destpath, '-v'], options);
 
-                            child.stdout.on('data', function (data) {
+                            child.stdout.on('data', (data) => {
                                 console.log("eliminating candidate");
 
                                 ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
@@ -199,16 +197,17 @@ export default class ShareFolder {
                                 });
                             });
 
-                            child.stderr.on('data', function (error) {
+                            child.stderr.on('data', (error) => {
+                                console.log('unmount error >>>>>>>>>>>', error.toString());
                                 error = error.toString();
-                                result['success'] = error;
+                                result['success'] = false;
                                 result['error'] = 'Error in deleting shared file';
                                 callback(result);
                             });
 
                         });
 
-                        child.stderr.on('data', function (error) {
+                        child.stderr.on('data', (error) => {
                             error = error.toString();
                             result['success'] = false;
                             result['error'] = 'Error in unmounting the shared folder';
@@ -223,9 +222,6 @@ export default class ShareFolder {
     }
 
     static changePermission(shareObj, candidate, callback) {
-
-        let src = shareObj.path;
-
         ShareFolderDbHandler.searchCandidateEntry(shareObj, candidate.username).then((result) => {
             if (!result.success) {
                 result['success'] = false;
@@ -236,99 +232,70 @@ export default class ShareFolder {
                 let dest = result.user.destpath;
 
                 if (candidate.permission !== user.permission) {
+                    if (candidate.permission === 'r') {
+                        const child = sudo(['mount', dest, '-o', 'remount,ro', '--bind', '-v'], options);
 
-                    const child = sudo(['umount', dest, '-v'], options);
-
-                    child.stdout.on('data', function (data) {
-                        if (candidate.permission === 'r') {
-                            const child = sudo(['mount', src, dest, '-o', 'bind', '-v'], options);
-
-                            child.stdout.on('data', function (data) {
-                                const child = sudo(['mount', dest, '-o', 'remount,ro,bind', '-v'], options);
-
-                                child.stdout.on('data', function (data) {
-                                    ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                        child.stdout.on('data', function (data) {
+                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                if (!result.success) {
+                                    callback(result)
+                                } else {
+                                    user.permission = "r";
+                                    ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
                                         if (!result.success) {
-                                            callback(result)
+                                            callback(result);
                                         } else {
-                                            user.permission = "r";
-                                            ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                                if (!result.success) {
-                                                    callback(result);
-                                                } else {
-                                                    result['success'] = true;
-                                                    callback(result);
-                                                }
-                                            });
+                                            result['success'] = true;
+                                            callback(result);
                                         }
                                     });
-                                });
-
-                                child.stderr.on('data', function (error) {
-                                    error = error.toString();
-                                    result['success'] = false;
-                                    result['error'] = 'Error in remounting shared file in read mode';
-                                    console.log(error);
-                                    callback(result);
-                                });
-
+                                }
                             });
+                        });
 
-                            child.stderr.on('data', function (error) {
-                                error = error.toString();
-                                result['success'] = false;
-                                result['error'] = 'Error in mounting shared file in read mode';
-                                console.log(error);
-                                callback(result);
+                        child.stderr.on('data', function (error) {
+                            error = error.toString();
+                            result['success'] = false;
+                            result['error'] = 'Error in remounting shared file in read mode';
+                            console.log(error);
+                            callback(result);
+                        });
+                    } else {
+                        const child = sudo(['mount', dest, '-o', 'remount,rw', '--bind', '-v'], options);
+
+                        child.stdout.on('data', function (data) {
+                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                if (!result.success) {
+                                    callback(result)
+                                } else {
+                                    user.permission = "r";
+                                    ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
+                                        if (!result.success) {
+                                            callback(result);
+                                        } else {
+                                            result['success'] = true;
+                                            callback(result);
+                                        }
+                                    });
+                                }
                             });
+                        });
 
-                        } else {
-                            const child = sudo(['mount', src, dest, '--bind', '-v'], options);
-
-                            child.stdout.on('data', function (data) {
-                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                    if (!result.success) {
-                                        callback(result)
-                                    } else {
-                                        user.permission = "rw";
-                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                            if (!result.success) {
-                                                callback(result);
-                                            } else {
-                                                result['success'] = true;
-                                                callback(result);
-                                            }
-                                        });
-                                    }
-                                });
-                            });
-
-                            child.stderr.on('data', function (error) {
-                                error = error.toString();
-                                result['success'] = false;
-                                result['error'] = 'Error in deleting shared file';
-                                callback(result);
-                            });
-
-                        }
-                    });
-
-                    child.stderr.on('data', function (error) {
-                        error = error.toString();
-                        result['success'] = error;
-                        result['error'] = 'Error in unmounting shared file';
-                        console.log(error);
-                        callback(result);
-                    });
+                        child.stderr.on('data', function (error) {
+                            error = error.toString();
+                            result['success'] = false;
+                            result['error'] = 'Error in remounting shared file in read mode';
+                            console.log(error);
+                            callback(result);
+                        });
+                    }
 
                 } else {
                     result['success'] = false;
                     result['error'] = "No change in the permission";
                     callback(result);
                 }
-
             }
-
         });
 
     }
