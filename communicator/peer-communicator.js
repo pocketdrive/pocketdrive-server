@@ -144,10 +144,14 @@ export default class PeerCommunicator {
     }
 
     async messageToPeer(buffer, type, data, callback) {
-        if (!this.peerObject.isConnected()) {
+        if (!_.isEmpty(this.peerObject) && !this.peerObject.isConnected()) {
             await this.waitForConnection();
+            this.peerObject.sendBuffer(buffer, type, data, callback);
+        } else if (this.peerObject.isConnected()) {
+            this.peerObject.sendBuffer(buffer, type, data, callback);
+        } else {
+            console.log('P2P Failure');
         }
-        this.peerObject.sendBuffer(buffer, type, data, callback);
     }
 }
 
