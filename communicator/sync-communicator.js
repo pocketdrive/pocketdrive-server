@@ -60,6 +60,7 @@ export default class SyncCommunicator {
     initCommunication(socket) {
         socket.on('message', async (json, callBack) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
+            console.log('fullPath: ', process.env.PD_FOLDER_PATH, json.username, json.path);
 
             switch (json.type) {
                 case SyncMessages.modifyFile:

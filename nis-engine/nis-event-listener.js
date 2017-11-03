@@ -84,21 +84,42 @@ export default class NisEventListener {
             });
         });
 
-        _.each(change, (changeList, changeListName) => {
+        /*_.each(change, (changeList, changeListName) => {
             const removables = [];
             _.each(changeList, (relativePath, index) => {
                 if(this.shouldIgnore(change[changeListName][index])){
                     removables.push(change[changeListName][index]);
                 }
             });
+            console.log('before removal,',change[changeListName])
             change[changeListName] = _.filter(changeList[changeListName], (obj) => {
-                return _.findIndex(removables, (obj1) => {
+
+                const shouldRemove =  _.findIndex(removables, (obj1) => {
                     return obj === obj1;
                 }) !== -1;
+                return shouldRemove;
+
+            });
+        });*/
+
+        console.log('Before remove: ', change);
+
+        _.each(change, (changeList, changeListName) => {
+            let removables = [];
+            _.each(changeList, (fullPath, index) => {
+                if(this.shouldIgnore(fullPath)){
+                    removables.push(index);
+                }
             });
 
+            removables = _.reverse(removables);
 
+            _.each(removables, (index) => {
+                change[changeListName].splice(index, 1);
+            })
         });
+
+        console.log('After remove: ', change);
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
