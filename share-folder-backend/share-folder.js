@@ -35,12 +35,10 @@ export default class ShareFolder {
                 delete result.data;
                 let src = path;
                 let dest = nodePath.join(process.env.PD_FOLDER_PATH, candidate.username, process.env.SHARED_FOLDER_NAME, username_from);
-                console.log(dest);
                 if (utils.isDirectoryExists(src)) {
 
                     let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';
 
-                    console.log(createDirCmd);
                     exec(createDirCmd, function (error, stdout, stderr) {
                         if (error) {
                             result['success'] = false;
@@ -51,12 +49,10 @@ export default class ShareFolder {
 
                         } else {
                             dest = dest + '/' + folder_name;
-                            console.log(dest);
                             if (!utils.isDirectoryExists(dest)) {
 
                                 createDirCmd = 'mkdir ' + '\"' + `${dest}` + '\"';
 
-                                console.log(createDirCmd);
                                 exec(createDirCmd, function (error, stdout, stderr) {
                                     if (error) {
                                         result['success'] = false;
@@ -70,15 +66,13 @@ export default class ShareFolder {
                                             const child = sudo(['mount', src, dest, '--bind', '-v'], options);
 
                                             child.stdout.on('data', (data) => {
-                                                console.log("Trying to enter into the database");
                                                 candidate.destpath = dest;
                                                 ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                     if (result.success) {
                                                         result['success'] = true;
                                                         callback(result);
-                                                        console.log("successful database entry");
                                                     } else {
-                                                        console.log("Error in inserting into database");
+                                                        console.error("Error in inserting into database");
                                                         callback(result);
                                                     }
                                                 })
@@ -178,14 +172,10 @@ export default class ShareFolder {
                         const child = sudo(['echo', 'unmounted'], options);
 
                         child.stdout.on('data', (data) => {
-                            console.log('unmounted >>>>>>>>>>>', data.toString());
                             const child = sudo(['rm', '-rf', destpath, '-v'], options);
 
                             child.stdout.on('data', (data) => {
-                                console.log("eliminating candidate");
-
                                 ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                    console.log(result);
                                     if (!result.success) {
                                         result['success'] = false;
                                         result['error'] = "Error in eliminating user";
@@ -199,7 +189,6 @@ export default class ShareFolder {
                             });
 
                             child.stderr.on('data', (error) => {
-                                console.log('unmount error >>>>>>>>>>>', error.toString());
                                 error = error.toString();
                                 result['success'] = false;
                                 result['error'] = 'Error in deleting shared file';
@@ -258,7 +247,7 @@ export default class ShareFolder {
                             error = error.toString();
                             result['success'] = false;
                             result['error'] = 'Error in remounting shared file in read mode';
-                            console.log(error);
+                            console.error(error);
                             callback(result);
                         });
                     } else {
