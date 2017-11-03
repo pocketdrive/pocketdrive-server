@@ -260,7 +260,7 @@ export class Communicator {
                     obj.message.message.path,
                     obj.message.message.users,
                     obj.message.message.candidates,
-                    obj.message.message.removedcandidates).then((result)=>{
+                    obj.message.message.removedcandidates).then((result) => {
                     ws.send(JSON.stringify(result));
                 });
                 // FileExplorer.shareFolder(

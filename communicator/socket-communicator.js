@@ -46,7 +46,7 @@ export default class SocketCommunicator {
                     break;
                 case sm.requestFile:
                     const fPath = path.resolve(process.env.PD_FOLDER_PATH, username, json.path);
-                    const writeStream = this.sockObject.stream('file', { type: sm.newFile, path: json.path });
+                    const writeStream = this.sockObject.stream('file', {type: sm.newFile, path: json.path});
                     fs.createReadStream(fPath).pipe(writeStream);
                     break;
             }
