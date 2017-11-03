@@ -75,7 +75,7 @@ export default class PeerCommunicator {
                 msg.message = 'Please check the link or contact file owner';
                 this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
             } else {
-                const filePath = path.join(process.env.PD_FOLDER_PATH, username,data.filePath);
+                const filePath = path.join(process.env.PD_FOLDER_PATH, username, data.filePath);
                 const file = fs.readFileSync(filePath);
                 const fileName = path.basename(data.filePath);
 

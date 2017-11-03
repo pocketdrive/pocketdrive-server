@@ -36,7 +36,7 @@ router.post('/getusers', async function (req, res, next) {
         result.success = data.result.success;
         result.users = data.result.users;
         console.log(result);
-        res.send(JSON.stringify({"result":result}));
+        res.send(JSON.stringify({"result": result}));
     });
 
 });
@@ -55,7 +55,7 @@ router.post('/sharefolder', function (req, res, next) {
         req.body.path,
         req.body.users,
         req.body.candidates,
-        req.body.removedcandidates).then((result)=>{
+        req.body.removedcandidates).then((result) => {
         res.send(JSON.stringify(result));
     });
 
@@ -68,7 +68,7 @@ router.post('/sharefolder', function (req, res, next) {
 *	    "folder_name":"TestFolder"
 *    }
  **/
-router.post('/unshare', function (req, res, next) {
+/*router.post('/unshare', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
     let response = [];
@@ -95,7 +95,7 @@ router.post('/unshare', function (req, res, next) {
             }
         });
     });
-});
+});*/
 
 /**  {
 *	"username_from":"anuradha",

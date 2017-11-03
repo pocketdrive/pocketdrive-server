@@ -55,8 +55,9 @@ export default class NisCommunicator {
                     case 'rename':
                         const oldPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
                         const newPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
-                        if(json.ignore) {
-                            NisEventListener.ignoreEvents.push(filepath);
+                        if (json.ignore) {
+                            NisEventListener.ignoreEvents.push(oldPath);
+                            NisEventListener.ignoreEvents.push(newPath);
                         }
 
                         try {
@@ -68,7 +69,7 @@ export default class NisCommunicator {
                     case 'delete':
                         const deletePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
-                        if(json.ignore) {
+                        if (json.ignore) {
                             NisEventListener.ignoreEvents.push(filepath);
                         }
                         if (fs.existsSync(deletePath)) {
@@ -84,11 +85,11 @@ export default class NisCommunicator {
         );
 
         socket.on('file', (readStream, json) => {
-            switch(json.type) {
+            switch (json.type) {
                 case 'new':
                     const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
-                    if(json.ignore) {
+                    if (json.ignore) {
                         NisEventListener.ignoreEvents.push(filepath);
                     }
 
@@ -104,7 +105,7 @@ export default class NisCommunicator {
                 case 'update':
                     // This is always a file, cannot be a folder
                     const filepathUpdate = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
-                    if(json.ignore) {
+                    if (json.ignore) {
                         NisEventListener.ignoreEvents.push(filepathUpdate);
                     }
 

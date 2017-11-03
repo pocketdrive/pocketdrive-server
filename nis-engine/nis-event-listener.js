@@ -6,7 +6,6 @@ import * as _ from 'lodash';
 
 import NisDBHandler from '../db/nis-meta-db';
 import * as metaUtils from '../utils/meta-data';
-import {getFolderChecksum} from "../sync-engine/sync-actions";
 import ChecksumDBHandler from "../db/checksum-db";
 // import {SyncRunner} from "./sync-runner";
 
@@ -72,7 +71,7 @@ export default class NisEventListener {
             this.changes.push(change);
 
             // if (this.serializeLock === 0) {
-                this.consume(this.changes.shift());
+            this.consume(this.changes.shift());
             // }
         });
     }
@@ -92,14 +91,14 @@ export default class NisEventListener {
                     removables.push(change[changeListName][index]);
                 }
             });
-            changeList[changeListName] = _.filter(changeList[changeListName], (obj) => {
+            change[changeListName] = _.filter(changeList[changeListName], (obj) => {
                 return _.findIndex(removables, (obj1) => {
                     return obj === obj1;
-                }) === -1;
+                }) !== -1;
             });
 
-        });
 
+        });
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory

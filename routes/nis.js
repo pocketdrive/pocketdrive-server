@@ -42,7 +42,7 @@ router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
 
-    NisDbHandler.setSyncFolders(req.username, data.clientId ,data.syncFolders).then((result) => {
+    NisDbHandler.setSyncFolders(req.username, data.clientId, data.syncFolders).then((result) => {
         res.set('Content-Type', 'application/json');
         res.send(result);
     })
