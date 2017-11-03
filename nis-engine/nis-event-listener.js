@@ -58,7 +58,7 @@ export default class NisEventListener {
         // noinspection JSUnusedLocalSymbols
         let monitor = fsmonitor.watch(this.baseDirectory, {
             matches: function (relPath) {
-                return relPath.match(/(\/\.)|(\\\.)|^(\.)/) === null;
+                return relPath.match(/(\/\.)|(\\\.)|^(\.)|tmp$/) === null;
             },
             excludes: function (relPath) {
                 return false;
