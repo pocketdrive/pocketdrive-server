@@ -27,7 +27,7 @@ export default class PeerCommunicator {
         let attemptCount = 0;
         return await new Promise(resolve => {
             const int = setInterval(() => {
-                if (this.peerObjec.isConnected()) {
+                if (this.peerObject.isConnected()) {
                     resolve(true);
                     clearInterval(int);
                 } else if (attemptCount === 10) {
