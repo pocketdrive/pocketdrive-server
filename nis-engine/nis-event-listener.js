@@ -102,8 +102,6 @@ export default class NisEventListener {
             });
         });*/
 
-        console.log('Before remove: ', change);
-
         _.each(change, (changeList, changeListName) => {
             let removables = [];
             _.each(changeList, (fullPath, index) => {
@@ -118,8 +116,6 @@ export default class NisEventListener {
                 change[changeListName].splice(index, 1);
             })
         });
-
-        console.log('After remove: ', change);
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
