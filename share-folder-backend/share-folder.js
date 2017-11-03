@@ -234,7 +234,7 @@ export default class ShareFolder {
 
                 if (candidate.permission !== user.permission) {
                     if (candidate.permission === 'r') {
-                        const child = sudo(['mount', dest, '-o', 'remount,ro', '--bind', '-v'], options);
+                        const child = sudo(['mount', '-o', 'remount,ro', '--bind', '-v', dest], options);
 
                         child.stdout.on('data', function (data) {
                             ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
@@ -269,7 +269,7 @@ export default class ShareFolder {
                                 if (!result.success) {
                                     callback(result)
                                 } else {
-                                    user.permission = "r";
+                                    user.permission = "rw";
                                     ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
                                         if (!result.success) {
                                             callback(result);
