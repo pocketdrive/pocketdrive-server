@@ -174,7 +174,8 @@ export default class ShareFolder {
                         let user = result.user;
                         let destpath = result.user.destpath;
 
-                        const child = sudo(['umount', destpath, '-v'], options);
+                        sudo(['umount', destpath, '-v'], options);
+                        const child = sudo(['echo', 'unmounted'], options);
 
                         child.stdout.on('data', (data) => {
                             console.log('unmounted >>>>>>>>>>>', data.toString());
