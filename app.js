@@ -19,7 +19,7 @@ import {NisRunner} from "./nis-engine/nis-runner";
 
 const app = express();
 
-// require('events').EventEmitter.defaultMaxListeners = Infinity;
+require('events').EventEmitter.defaultMaxListeners = Infinity;
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
