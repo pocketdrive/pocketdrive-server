@@ -186,13 +186,16 @@ export default class NisDBHandler {
         });
     }
 
-    static getAllEvents() {
+    static getEvents(user, otherDeviceID) {
         let result = {success: false};
 
         return new Promise((resolve) => {
-            databases.nisMetadataDb.find({}).sort({sequence_id: 1}).exec((err, docs) => {
+            databases.nisMetadataDb.find({
+                user: user,
+                otherDeviceID: otherDeviceID
+            }).sort({sequence_id: 1}).exec((err, docs) => {
                 if (err) {
-                    this.handleError(result, 'DB Error. Cannot get max sequenceID', err);
+                    this.handleError(result, 'DB Error. Cannot get and sort events', err);
                 } else {
                     result.success = true;
                     result.data = docs;
