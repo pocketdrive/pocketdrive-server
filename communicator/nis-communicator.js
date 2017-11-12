@@ -73,7 +73,7 @@ export default class NisCommunicator {
                             }, 5000);
 
                         } catch (e) {
-                            console.error('COULD NOT RENAME');
+                            console.error('COULD NOT RENAME', e);
                         }
                         break;
 
