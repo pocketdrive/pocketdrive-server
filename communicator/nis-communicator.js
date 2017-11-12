@@ -32,6 +32,7 @@ export default class NisCommunicator {
                     case 'getEvents':
                         // TODO filter by username and otherDevice id
                         NisDBHandler.getEvents(json.username, json.otherDeviceID).then((data) => {
+                            console.log(data);
                             callBack(data)
                         });
                         break;
@@ -51,6 +52,10 @@ export default class NisCommunicator {
                         if (fs.existsSync(filePath)) {
                             const writeStream = socket.stream('file', {path: json.path, username: json.username});
                             fs.createReadStream(filePath).pipe(writeStream);
+
+                            writeStream.on('finish', () => {
+                                writeStream.end();
+                            });
                         }
 
                         break;

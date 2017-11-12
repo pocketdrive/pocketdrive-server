@@ -84,24 +84,6 @@ export default class NisEventListener {
             });
         });
 
-        /*_.each(change, (changeList, changeListName) => {
-            const removables = [];
-            _.each(changeList, (relativePath, index) => {
-                if(this.shouldIgnore(change[changeListName][index])){
-                    removables.push(change[changeListName][index]);
-                }
-            });
-            console.log('before removal,',change[changeListName])
-            change[changeListName] = _.filter(changeList[changeListName], (obj) => {
-
-                const shouldRemove =  _.findIndex(removables, (obj1) => {
-                    return obj === obj1;
-                }) !== -1;
-                return shouldRemove;
-
-            });
-        });*/
-
         _.each(change, (changeList, changeListName) => {
             let removables = [];
             _.each(changeList, (fullPath, index) => {
