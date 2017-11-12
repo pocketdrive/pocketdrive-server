@@ -81,7 +81,7 @@ export default class NisCommunicator {
                         const deletePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
                         if (json.ignore) {
-                            NisEventListener.ignoreEvents.push(filepath);
+                            NisEventListener.ignoreEvents.push(deletePath);
                         }
 
                         if (fs.existsSync(deletePath)) {
@@ -92,7 +92,7 @@ export default class NisCommunicator {
                             }
 
                             setTimeout(() => {
-                                NisEventListener.ignoreEvents.splice(filepath, 1)
+                                NisEventListener.ignoreEvents.splice(deletePath, 1)
                             }, 5000);
                         }
 
