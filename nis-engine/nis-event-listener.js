@@ -121,7 +121,7 @@ export default class NisEventListener {
             const newPath = _.replace(change.addedFiles[0], this.pathPrefix, '');
             const oldPath = _.replace(change.removedFiles[0], this.pathPrefix, '');
 
-            NisDBHandler.updateEntry(this.username, oldPath, {
+            NisDBHandler.insertEntry({
                 action: SyncEvents.RENAME,
                 user: this.username,
                 otherDeviceID: this.otherDeviceID,
