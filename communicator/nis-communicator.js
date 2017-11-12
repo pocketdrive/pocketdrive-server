@@ -49,7 +49,7 @@ export default class NisCommunicator {
                         const filePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
                         if (fs.existsSync(filePath)) {
-                            let writeStream = ss.createStream();
+                            const writeStream = ss.createStream();
                             ss(socket).emit('file', writeStream, {path: json.path, username: json.username});
                             fs.createReadStream(filePath).pipe(writeStream);
                         }
@@ -92,7 +92,7 @@ export default class NisCommunicator {
             }
         );
 
-        ss(socket).on('file',  (readStream, json) => {
+        ss(socket).on('file', (readStream, json) => {
             const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             if (json.ignore) {
@@ -105,7 +105,7 @@ export default class NisCommunicator {
 
     }
 
-    callBack(socket, data){
+    callBack(socket, data) {
         socket.emit('callBack', data);
     }
 
