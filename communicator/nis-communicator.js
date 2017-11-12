@@ -67,6 +67,9 @@ export default class NisCommunicator {
 
                         try {
                             fs.renameSync(oldPath, newPath);
+                            NisEventListener.ignoreEvents.splice(oldPath, 1);
+                            NisEventListener.ignoreEvents.splice(newPath, 1);
+
                         } catch (e) {
                             console.error('COULD NOT RENAME');
                         }
@@ -85,6 +88,8 @@ export default class NisCommunicator {
                             } else {
                                 fs.unlinkSync(deletePath);
                             }
+
+                            NisEventListener.ignoreEvents.splice(filepath, 1);
                         }
 
                         break;
@@ -100,7 +105,12 @@ export default class NisCommunicator {
             }
 
             this.preparePath(path.dirname(filepath));
-            readStream.pipe(fs.createWriteStream(filepath));
+            const writeStream = fs.createWriteStream(filepath);
+            readStream.pipe(writeStream);
+
+            writeStream.on('finish', () => {
+                NisEventListener.ignoreEvents.splice(filepath, 1);
+            })
         });
 
     }

@@ -18,7 +18,7 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class NisEventListener {
 
-    static ignoreEvents  = []; // fullpath
+    static ignoreEvents = []; // fullpath
     static sequenceID = 0;
 
     constructor(username, folder, deviceID) {
@@ -41,17 +41,9 @@ export default class NisEventListener {
     }
 
     shouldIgnore(path) {
-        const shouldIgnore =  _.findIndex(NisEventListener.ignoreEvents, (obj) => {
+        return _.findIndex(NisEventListener.ignoreEvents, (obj) => {
             return obj === path;
         }) !== -1;
-
-        if(shouldIgnore) {
-            _.remove(NisEventListener.ignoreEvents, (obj) =>{
-               return obj === path;
-            });
-        }
-
-        return shouldIgnore;
     }
 
     start() {
@@ -84,10 +76,28 @@ export default class NisEventListener {
             });
         });
 
+        /*_.each(change, (changeList, changeListName) => {
+            const removables = [];
+            _.each(changeList, (relativePath, index) => {
+                if(this.shouldIgnore(change[changeListName][index])){
+                    removables.push(change[changeListName][index]);
+                }
+            });
+            console.log('before removal,',change[changeListName])
+            change[changeListName] = _.filter(changeList[changeListName], (obj) => {
+
+                const shouldRemove =  _.findIndex(removables, (obj1) => {
+                    return obj === obj1;
+                }) !== -1;
+                return shouldRemove;
+
+            });
+        });*/
+
         _.each(change, (changeList, changeListName) => {
             let removables = [];
             _.each(changeList, (fullPath, index) => {
-                if(this.shouldIgnore(fullPath)){
+                if (this.shouldIgnore(fullPath)) {
                     removables.push(index);
                 }
             });
@@ -98,6 +108,8 @@ export default class NisEventListener {
                 change[changeListName].splice(index, 1);
             })
         });
+
+        console.log(change);
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
