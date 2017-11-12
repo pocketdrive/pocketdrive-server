@@ -94,8 +94,6 @@ export default class NisEventListener {
             })
         });
 
-        console.log(change);
-
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
             // Rename directory
             console.log("Watcher [DIR][RENAME] ", change.removedFolders[0], ' --> ', change.addedFolders[0]);
