@@ -193,10 +193,14 @@ export default class FileSystemEventListener {
 
         }
 
-        this.serializeLock--;
+        if (this.changes.length > 0) {
+            this.consume(this.changes.shift());
+        } else {
+            SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
+                SyncRunner.eventListeners[this.username].isWatcherRunning = false;
+            }, 5000);
+        }
 
-        SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
-            SyncRunner.eventListeners[this.username].isWatcherRunning = false;
-        }, 5000);
+        this.serializeLock--;
     }
 }
