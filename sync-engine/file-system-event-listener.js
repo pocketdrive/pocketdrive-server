@@ -18,6 +18,8 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class FileSystemEventListener {
 
+    static ignoreEvents = [];
+
     constructor(username, folder, deviceIDs) {
         this.pdPath = process.env.PD_FOLDER_PATH;
         this.username = username;
@@ -35,6 +37,12 @@ export default class FileSystemEventListener {
         MetadataDBHandler.getNextSequenceID().then((result) => {
             this.sequenceID = result.data;
         });
+    }
+
+    shouldIgnore(path) {
+        return _.findIndex(FileSystemEventListener.ignoreEvents, (obj) => {
+            return obj === path;
+        }) !== -1;
     }
 
     start() {
@@ -69,6 +77,22 @@ export default class FileSystemEventListener {
             _.each(changeList, (relativePath, index) => {
                 change[changeListName][index] = path.join(this.baseDirectory, relativePath);
             });
+        });
+
+        // Ignore files which are being synced now
+        _.each(change, (changeList, changeListName) => {
+            let removables = [];
+            _.each(changeList, (fullPath, index) => {
+                if (this.shouldIgnore(fullPath)) {
+                    removables.push(index);
+                }
+            });
+
+            removables = _.reverse(removables);
+
+            _.each(removables, (index) => {
+                change[changeListName].splice(index, 1);
+            })
         });
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {

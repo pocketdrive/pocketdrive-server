@@ -1,6 +1,4 @@
-const io = require('socket.io')();
-const ss = require('socket.io-stream');
-
+import FileSystemEventListener from "../sync-engine/file-system-event-listener";
 import path from 'path';
 import fs from 'fs';
 import streamToBuffer from 'stream-to-buffer';
@@ -26,6 +24,9 @@ import {CommonUtils} from "../utils/common";
 import MetadataDBHandler from "../db/sync-meta-db";
 import {SyncRunner} from "../sync-engine/sync-runner";
 
+const io = require('socket.io')();
+const ss = require('socket.io-stream');
+
 /**
  * @author Dulaj Atapattu
  */
@@ -48,6 +49,7 @@ export default class SyncCommunicator {
     initCommunication(socket) {
         socket.on('message', async (json) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
+            FileSystemEventListener.ignoreEvents.push(fullPath);
 
             switch (json.type) {
                 case SyncMessages.modifyFile:
@@ -59,12 +61,14 @@ export default class SyncCommunicator {
                     console.log('Sync message [FILE][RENAME]: ', json.oldPath, ' --> ', json.path);
 
                     let fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
+                    FileSystemEventListener.ignoreEvents.push(fullOldPath);
 
                     if (syncActions.checkExistence(fullOldPath) && !syncActions.checkExistence(fullPath)) {
                         const currentChecksum = getFileChecksum(fullOldPath);
 
                         if (currentChecksum === json.current_cs) {
                             fs.renameSync(fullOldPath, fullPath);
+
                             this.callBack(socket, {
                                 type: 'onResponse',
                                 action: SyncActions.doNothingFile,
@@ -90,6 +94,8 @@ export default class SyncCommunicator {
                     else {
                         this.callBack(socket, await createOrModifyFile(fullPath, json));
                     }
+
+                    FileSystemEventListener.ignoreEvents.splice(fullOldPath, 1);
 
                     break;
 
@@ -147,6 +153,7 @@ export default class SyncCommunicator {
                     console.log('Sync message [DIR][RENAME]: ', json.oldPath, ' --> ', json.path);
 
                     fullOldPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
+                    FileSystemEventListener.ignoreEvents.push(fullOldPath);
 
                     if (checkExistence(fullOldPath) && await getFolderChecksum(fullOldPath) === json.current_cs) {
                         if (!checkExistence(fullPath)) {
@@ -197,9 +204,13 @@ export default class SyncCommunicator {
                         }
                     }
 
+                    FileSystemEventListener.ignoreEvents.splice(fullOldPath, 1);
+
                     break;
 
             }
+
+            FileSystemEventListener.ignoreEvents.splice(fullPath, 1);
         });
 
         socket.on('action', async (json) => {
@@ -207,7 +218,10 @@ export default class SyncCommunicator {
                 case SyncActionMessages.newFolder:
                     const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
+
+                    FileSystemEventListener.ignoreEvents.push(fullPath);
                     fs.mkdirSync(fullPath);
+                    FileSystemEventListener.ignoreEvents.splice(fullPath, 1);
                     this.callBack(socket, {type: 'newFolder', sourcePath: json.sourcePath});
                     break;
 
@@ -230,12 +244,14 @@ export default class SyncCommunicator {
             console.log('Sync file [FILE_COPY]: ', json.path);
 
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
+            FileSystemEventListener.ignoreEvents.push(fullPath);
 
             let writeStream = fs.createWriteStream(fullPath);
             readStream.pipe(writeStream);
 
             writeStream.on('finish', () => {
                 setSyncedChecksum(json.path, getCheckSum(fullPath));
+                FileSystemEventListener.ignoreEvents.splice(fullPath, 1);
             });
         });
 
@@ -244,7 +260,9 @@ export default class SyncCommunicator {
 
             streamToBuffer(readStream, (err, transmissionData) => {
                 const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
+                FileSystemEventListener.ignoreEvents.push(fullPath);
                 ChunkBasedSynchronizer.updateOldFile(transmissionData, fullPath);
+                FileSystemEventListener.ignoreEvents.splice(fullPath, 1);
             })
         });
 
@@ -389,13 +407,11 @@ export default class SyncCommunicator {
 
             case SyncActions.doNothingFile:
                 console.log('Sync response [FILE][DO_NOTHING_FILE]: ', dbEntry.path);
-
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
             case SyncActions.doNothingDir:
                 console.log('Sync response [DIR][DO_NOTHING_DIR]: ', dbEntry.path);
-
                 afterSyncFile(dbEntry.sequence_id, dbEntry.path, dbEntry.current_cs);
                 break;
 
@@ -422,7 +438,11 @@ export default class SyncCommunicator {
                 const newPath = _.replace(dbEntry.path, names[names.length - 1], newNameWithExtension);
                 const fullNewPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.username, newPath);
 
+                FileSystemEventListener.ignoreEvents.push(fullPath);
+                FileSystemEventListener.ignoreEvents.push(fullNewPath);
                 fs.renameSync(fullPath, fullNewPath);
+                FileSystemEventListener.ignoreEvents.splice(fullPath, 1);
+                FileSystemEventListener.ignoreEvents.splice(fullNewPath, 1);
 
                 ss(clientStats.socket).emit('file', writeStream, {path: newPath});
                 fs.createReadStream(fullNewPath).pipe(writeStream);

@@ -18,7 +18,7 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class NisEventListener {
 
-    static ignoreEvents = []; // fullpath
+    static ignoreEvents = [];
     static sequenceID = 0;
 
     constructor(username, folder, deviceID) {
