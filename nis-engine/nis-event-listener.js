@@ -57,7 +57,7 @@ export default class NisEventListener {
             }
         });
 
-        console.log('Add watch ', this.baseDirectory);
+        console.log('Watch ', this.baseDirectory);
 
         monitor.on('change', (change) => {
             this.changes.push(change);
@@ -221,6 +221,11 @@ export default class NisEventListener {
         }
 
         this.serializeLock--;
+    }
+
+    stop() {
+        this.monitor.close();
+        console.log('Unwatch ', this.baseDirectory);
     }
 
 }
