@@ -17,7 +17,7 @@ export class SyncRunner {
     }
 
     static startSync() {
-        console.log('Starting sync engine...');
+        // console.log('Starting sync engine...');
         SyncDbHandler.getAllSyncingUsers().then((users) => {
             _.each(users.data, (user) => {
                 _.each(user.syncFolders, (folderName) => {
@@ -29,7 +29,7 @@ export class SyncRunner {
     }
 
     static stopSync() {
-        console.log('Stopping sync engine...');
+        // console.log('Stopping sync engine...');
         _.each(this.eventListeners, (obj) => {
             _.each(obj.listeners, (item) => {
                 item.listener.stop();
@@ -38,6 +38,7 @@ export class SyncRunner {
     }
 
     static restartSyncEngine() {
+        console.log('Restarting sync engine...');
         SyncRunner.stopSync();
         SyncRunner.startSync();
     }

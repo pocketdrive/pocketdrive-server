@@ -1,4 +1,6 @@
-import {Server, Socket} from 'fast-tcp';
+const io = require('socket.io')();
+const ss = require('socket.io-stream');
+
 import path from 'path';
 import fs from 'fs';
 import streamToBuffer from 'stream-to-buffer';
@@ -16,7 +18,6 @@ import {
     getFolderChecksum,
     getSyncedChecksum,
     isFolderEmpty,
-    modifyExistingFile,
     setSyncedChecksum
 } from '../sync-engine/sync-actions';
 import {ChunkBasedSynchronizer} from "../sync-engine/chunk-based-synchronizer";
@@ -34,38 +35,24 @@ export default class SyncCommunicator {
 
     constructor() {
         // Initialize server to listen for incoming messages
-        this.server = new Server();
-        this.server.on('connection', (socket) => {
-            this.clientStats[socket.id] = {id: socket.id};
+        io.on('connection', (socket) => {
+            this.clientStats[socket.id] = {id: socket.id, socket: socket};
             this.initCommunication(socket);
             console.log('Sync client connected');
         });
-        this.server.listen(5000);
+        io.listen(5000);
+
         console.log('Sync server started on port 5000');
     }
 
-    openSocket(clientStats) {
-        this.clientStats[clientStats.id].socket = new Socket({
-            host: clientStats.clientIP,
-            port: 6000
-        });
-
-        this.clientStats[clientStats.id].serializeLock = 0;
-    }
-
-    closeSocket(clientStats) {
-        clientStats.socket.destroy();
-    }
-
     initCommunication(socket) {
-        socket.on('message', async (json, callBack) => {
+        socket.on('message', async (json) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             switch (json.type) {
                 case SyncMessages.modifyFile:
                     console.log('Sync message [FILE][MODIFY]: ', json.path);
-
-                    callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                    this.callBack(socket, await createOrModifyFile(fullPath, json));
                     break;
 
                 case SyncMessages.renameFile:
@@ -78,14 +65,18 @@ export default class SyncCommunicator {
 
                         if (currentChecksum === json.current_cs) {
                             fs.renameSync(fullOldPath, fullPath);
-                            callBack({action: SyncActions.doNothingFile});
+                            this.callBack(socket, {
+                                type: 'onResponse',
+                                action: SyncActions.doNothingFile,
+                                dbEntry: json.dbEntry
+                            });
 
                         } else if (currentChecksum === json.synced_cs) {
                             fs.renameSync(fullOldPath, fullPath);
-                            callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                            this.callBack(socket, await createOrModifyFile(fullPath, json));
 
                         } else {
-                            callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                            this.callBack(socket, await createOrModifyFile(fullPath, json));
                         }
                     }
                     if (syncActions.checkExistence(fullOldPath) && syncActions.checkExistence(fullPath)) {
@@ -97,7 +88,7 @@ export default class SyncCommunicator {
                         }
                     }
                     else {
-                        callBack(await createOrModifyFile(fullPath, json.current_cs, json.synced_cs));
+                        this.callBack(socket, await createOrModifyFile(fullPath, json));
                     }
 
                     break;
@@ -114,7 +105,11 @@ export default class SyncCommunicator {
                         }
                     }
 
-                    callBack({action: SyncActions.doNothingFile});
+                    this.callBack(socket, {
+                        type: 'onResponse',
+                        action: SyncActions.doNothingFile,
+                        dbEntry: json.dbEntry
+                    });
 
                     break;
 
@@ -125,7 +120,11 @@ export default class SyncCommunicator {
                         fs.mkdirSync(fullPath);
                     }
 
-                    callBack({action: SyncActions.doNothingDir});
+                    this.callBack(socket, {
+                        type: 'onResponse',
+                        action: SyncActions.doNothingDir,
+                        dbEntry: json.dbEntry
+                    });
 
                     break;
 
@@ -136,7 +135,11 @@ export default class SyncCommunicator {
                         fs.rmdirSync(fullPath);
                     }
 
-                    callBack({action: SyncActions.doNothingDir});
+                    this.callBack(socket, {
+                        type: 'onResponse',
+                        action: SyncActions.doNothingDir,
+                        dbEntry: json.dbEntry
+                    });
 
                     break;
 
@@ -161,51 +164,51 @@ export default class SyncCommunicator {
                             fs.renameSync(fullOldPath, fullNewPath);
                         }
 
-                        callBack({action: SyncActions.doNothingDir});
+                        this.callBack(socket, {
+                            type: 'onResponse',
+                            action: SyncActions.doNothingDir,
+                            dbEntry: json.dbEntry
+                        });
 
                     }
                     else {
                         if (!checkExistence(fullPath)) {
-                            callBack({action: SyncActions.streamFolder, isConflict: false});
+                            this.callBack(socket, {
+                                type: 'onResponse',
+                                action: SyncActions.streamFolder,
+                                isConflict: false,
+                                dbEntry: json.dbEntry
+                            });
                         }
                         else if (await getFolderChecksum(fullPath) === json.current_cs) {
-                            callBack({action: SyncActions.doNothingDir});
+                            this.callBack(socket, {
+                                type: 'onResponse',
+                                action: SyncActions.doNothingDir,
+                                dbEntry: json.dbEntry
+                            });
                         }
                         else {
-                            callBack({action: SyncActions.streamFolder, isConflict: true});
+                            this.callBack(socket, {
+                                type: 'onResponse',
+                                action: SyncActions.streamFolder,
+                                isConflict: true,
+                                dbEntry: json.dbEntry
+                            });
                         }
                     }
 
                     break;
 
-                /*case sm.requestFile:
-                    console.log('Fie message: ', json.path);
-                    const fPath = path.resolve(process.env.PD_FOLDER_PATH, json.path);
-                    const writeStream = socket.stream('file', {type: sm.newFile, path: json.path});
-                    fs.createReadStream(fPath).pipe(writeStream);
-                    break;*/
             }
         });
 
-        socket.on('action', async (json, callBack) => {
+        socket.on('action', async (json) => {
             switch (json.type) {
-                case SyncActionMessages.connectToClient:
-                    console.log('Sync action [CONNECT_TO_CLIENT]: ', json.ip);
-                    this.clientStats[socket.id].clientIP = json.ip;
-                    this.openSocket(this.clientStats[socket.id]);
-                    break;
-
-                case SyncActionMessages.disconnectFromClient:
-                    console.log('Sync action [DISCONNECT_FROM_CLIENT]');
-                    this.closeSocket(this.clientStats[socket.id]);
-                    callBack();
-                    break;
-
                 case SyncActionMessages.newFolder:
                     const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                     console.log('Sync action [NEW_FOLDER]: ', json.path);
                     fs.mkdirSync(fullPath);
-                    callBack();
+                    this.callBack(socket, {type: 'newFolder', sourcePath: json.sourcePath});
                     break;
 
                 case SyncActionMessages.serverToPdSync:
@@ -214,16 +217,16 @@ export default class SyncCommunicator {
 
                     if (SyncRunner.eventListeners[this.clientStats[socket.id].username] &&
                         !SyncRunner.eventListeners[this.clientStats[socket.id].username].isWatcherRunning) {
-                        this.doSync(this.clientStats[socket.id], callBack);
+                        this.doSync(this.clientStats[socket.id], this.callBack);
                     } else {
-                        callBack();
+                        this.callBack(socket, {type: 'serverToPdSync'});
                     }
 
                     break;
             }
         });
 
-        socket.on('file', function (readStream, json) {
+        ss(socket).on('file', (readStream, json) => {
             console.log('Sync file [FILE_COPY]: ', json.path);
 
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
@@ -231,18 +234,47 @@ export default class SyncCommunicator {
             let writeStream = fs.createWriteStream(fullPath);
             readStream.pipe(writeStream);
 
-            writeStream.on('finish', function () {
+            writeStream.on('finish', () => {
                 setSyncedChecksum(json.path, getCheckSum(fullPath));
             });
         });
 
-        socket.on('transmissionData', (readStream, json) => {
+        ss(socket).on('transmissionData', (readStream, json) => {
             console.log('Sync transmissionData: ', json.path);
 
             streamToBuffer(readStream, (err, transmissionData) => {
                 const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
                 ChunkBasedSynchronizer.updateOldFile(transmissionData, fullPath);
             })
+        });
+
+        socket.on('callBack', async (json) => {
+            switch (json.type) {
+                case 'onResponse':
+                    this.onResponse(this.clientStats[socket.id], json);
+                    break;
+
+                case 'newFolder':
+                    const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.sourcePath);
+                    const files = fs.readdirSync(fullSourcePath);
+
+                    for (let i = 0; i < files.length; i++) {
+                        const sourceItemPath = path.join(json.sourcePath, files[i]);
+                        const targetItemPath = path.join(targetPath, files[i]);
+                        const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, sourceItemPath);
+
+                        if (fs.statSync(fullSourceItemPath).isDirectory()) {
+                            await this.syncNewDirectory(clientStats, json.username, sourceItemPath, targetItemPath);
+                        }
+                        else {
+                            const writeStream = ss.createStream();
+                            ss(socket).emit('file', writeStream, {path: targetItemPath});
+                            fs.createReadStream(fullSourceItemPath).pipe(writeStream);
+                        }
+                    }
+
+                    break;
+            }
         });
     }
 
@@ -261,7 +293,8 @@ export default class SyncCommunicator {
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        dbEntry: dbEntry
+                    });
 
                     break;
 
@@ -275,7 +308,8 @@ export default class SyncCommunicator {
                         oldPath: dbEntry.oldPath,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        dbEntry: dbEntry
+                    });
 
                     break;
 
@@ -288,19 +322,21 @@ export default class SyncCommunicator {
                         path: dbEntry.path,
                         current_cs: dbEntry.current_cs,
                         synced_cs: await getSyncedChecksum(dbEntry.path),
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        dbEntry: dbEntry
+                    });
                     break;
             }
         } else if (dbEntry.type === 'dir') {
             switch (dbEntry.action) {
                 case SyncEvents.NEW:
-                    console.log('Sync request [DIR][NEW]: ', dbEntry.path);
+                    console.log('Sync request [DIR][NEW]: ', dbEntry.path, dbEntry.user);
 
                     clientStats.socket.emit('message', {
                         username: dbEntry.user,
                         type: SyncMessages.newFolder,
                         path: dbEntry.path,
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        dbEntry: dbEntry
+                    });
 
                     break;
 
@@ -312,8 +348,9 @@ export default class SyncCommunicator {
                         type: SyncMessages.renameFolder,
                         path: dbEntry.path,
                         oldPath: dbEntry.oldPath,
-                        current_cs: dbEntry.current_cs
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        current_cs: dbEntry.current_cs,
+                        dbEntry: dbEntry
+                    });
 
                     break;
 
@@ -324,7 +361,8 @@ export default class SyncCommunicator {
                         username: dbEntry.user,
                         type: SyncMessages.deleteFolder,
                         path: dbEntry.path,
-                    }, (response) => this.onResponse(clientStats, dbEntry, response));
+                        dbEntry: dbEntry
+                    });
 
                     break;
 
@@ -332,15 +370,17 @@ export default class SyncCommunicator {
         }
     }
 
-    async onResponse(clientStats, dbEntry, response) {
+    async onResponse(clientStats, response) {
+        const dbEntry = response.dbEntry;
         const fullPath = path.resolve(process.env.PD_FOLDER_PATH, dbEntry.user, dbEntry.path);
+        const writeStream = ss.createStream();
 
         switch (response.action) {
             case SyncActions.justCopy:
                 console.log('Sync response [FILE][JUST_COPY]: ', dbEntry.path);
 
                 if (checkExistence(fullPath)) {
-                    let writeStream = clientStats.socket.stream('file', {path: dbEntry.path});
+                    ss(clientStats.socket).emit('file', writeStream, {path: dbEntry.path});
                     fs.createReadStream(fullPath).pipe(writeStream);
                 }
 
@@ -365,14 +405,7 @@ export default class SyncCommunicator {
                 const newFileChecksum = await ChunkBasedSynchronizer.getChecksumOfChunks(fullPath);
                 const transmissionData = await ChunkBasedSynchronizer.getTransmissionData(response.oldFileChecksums, newFileChecksum, fs.readFileSync(fullPath));
 
-                /*clientStats.socket.emit('action', {
-                    type: SyncActionMessages.chunkBasedSync,
-                    transmissionData: transmissionData,
-                    path: dbEntry.path
-                });*/
-
-                let writeStream = clientStats.socket.stream('transmissionData', {path: dbEntry.path});
-
+                ss(clientStats.socket).emit('transmissionData', writeStream, {path: dbEntry.path});
                 let bufferStream = new stream.PassThrough();
                 bufferStream.end(transmissionData);
                 bufferStream.pipe(writeStream);
@@ -391,14 +424,15 @@ export default class SyncCommunicator {
 
                 fs.renameSync(fullPath, fullNewPath);
 
-                let ws = clientStats.socket.stream('file', {path: newPath}, (response) => {
+                ss(clientStats.socket).emit('file', writeStream, {path: newPath});
+                fs.createReadStream(fullNewPath).pipe(writeStream);
+
+                writeStream.on('finish', () => {
                     console.log('Conflicted file copied : ' + response);
                     deleteMetadataEntry(dbEntry.sequence_id);
                     setSyncedChecksum(newPath, dbEntry.current_cs);
                 });
 
-                fs.createReadStream(fullNewPath).pipe(ws);
-                // TODO: Check whether the remote side original file has to be copied manually.
                 break;
 
             case SyncActions.streamFolder:
@@ -422,30 +456,15 @@ export default class SyncCommunicator {
         clientStats.serializeLock--;
     }
 
-    async syncNewDirectory(clientStats, username, sourcePath, targetPath) {
+    async syncNewDirectory(clientStats, username, targetPath) {
         clientStats.serializeLock++;
         // TODO: Recheck for folder names with dots.
-        const fullSourcePath = path.resolve(process.env.PD_FOLDER_PATH, username, sourcePath);
 
         clientStats.socket.emit('action', {
             type: SyncActionMessages.newFolder,
-            path: targetPath
-        }, async () => {
-            const files = fs.readdirSync(fullSourcePath);
-
-            for (let i = 0; i < files.length; i++) {
-                const sourceItemPath = path.join(sourcePath, files[i]);
-                const targetItemPath = path.join(targetPath, files[i]);
-                const fullSourceItemPath = path.resolve(process.env.PD_FOLDER_PATH, username, sourceItemPath);
-
-                if (fs.statSync(fullSourceItemPath).isDirectory()) {
-                    await this.syncNewDirectory(clientStats, username, sourceItemPath, targetItemPath);
-                }
-                else {
-                    let ws = clientStats.socket.stream('file', {path: targetItemPath});
-                    fs.createReadStream(fullSourceItemPath).pipe(ws);
-                }
-            }
+            path: targetPath,
+            username: username,
+            sourcePath: sourcePath
         });
 
         clientStats.serializeLock--;
@@ -457,33 +476,24 @@ export default class SyncCommunicator {
         await MetadataDBHandler.getChangesOfUser(clientStats.username).then(async (changes) => {
             changes = changes.data;
             let i = 0;
-            let tryCount = 0;
 
             const intervalId = setInterval(async () => {
                 if (clientStats.serializeLock === 0) {
-                    tryCount = 0;
                     if (i < changes.length) {
                         await this.sendSyncRequest(clientStats, changes[i++]);
                     }
                     else {
                         clearInterval(intervalId);
-                        callBack();
+                        callBack(clientStats['socket'], {type: 'serverToPdSync'});
                     }
                 }
-                else if (tryCount === 10) {
-                    this.closeSocket(clientStats);
-                    this.openSocket(clientStats);
-                    i--;
-                    tryCount = 0;
-                }
-                else {
-                    tryCount++;
-                    console.log('Retrying to sync: ', tryCount);
-                }
-
             }, 500);
 
         });
+    }
+
+    callBack(socket, data) {
+        socket.emit('callBack', data);
     }
 
 }
