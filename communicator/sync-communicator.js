@@ -60,7 +60,6 @@ export default class SyncCommunicator {
     initCommunication(socket) {
         socket.on('message', async (json, callBack) => {
             const fullPath = path.resolve(process.env.PD_FOLDER_PATH, json.username, json.path);
-            console.log('fullPath: ', process.env.PD_FOLDER_PATH, json.username, json.path);
 
             switch (json.type) {
                 case SyncMessages.modifyFile:
@@ -210,7 +209,7 @@ export default class SyncCommunicator {
                     break;
 
                 case SyncActionMessages.serverToPdSync:
-                    // console.log('Sync action [SERVER_TO_PD_SYNC]');
+                    console.log('[SYNC][SERVER_TO_CLIENT]');
                     this.clientStats[socket.id]['username'] = json.username;
 
                     if (SyncRunner.eventListeners[this.clientStats[socket.id].username] &&
