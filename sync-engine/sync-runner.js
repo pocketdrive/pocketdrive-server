@@ -11,7 +11,7 @@ export class SyncRunner {
 
     static eventListeners = {};
 
-    static onPdStart(){
+    static onPdStart() {
         SyncRunner.communicator = new SyncCommunicator();
         SyncRunner.startSync();
     }
