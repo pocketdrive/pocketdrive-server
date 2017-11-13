@@ -11,41 +11,58 @@ export class SyncRunner {
 
     static eventListeners = {};
 
-    static onPdStart() {
+    static onPdStart(){
+        SyncRunner.communicator = new SyncCommunicator();
+        SyncRunner.startSync();
+    }
 
+    static startSync() {
+        console.log('Starting sync engine...');
         SyncDbHandler.getAllSyncingUsers().then((users) => {
             _.each(users.data, (user) => {
                 _.each(user.syncFolders, (folderName) => {
-                    SyncRunner.onAddNewSyncDirectory(user.username, folderName);
+                    SyncRunner.addSyncDirectory(user.username, folderName);
                 });
             });
         });
 
-        // Create the server socket
-        SyncRunner.communicator = new SyncCommunicator();
     }
 
-    static onPdStop() {
-
+    static stopSync() {
+        console.log('Stopping sync engine...');
+        _.each(this.eventListeners, (obj) => {
+            _.each(obj.listeners, (item) => {
+                item.listener.stop();
+            });
+        });
     }
 
-    static onClientConnect(username) {
-
+    static restartSyncEngine() {
+        SyncRunner.stopSync();
+        SyncRunner.startSync();
     }
 
-    static onClientDisconnect(username) {
-
-    }
-
-    static onAddNewSyncDirectory(username, folderName, deviceIds) {
+    static addSyncDirectory(username, folderName) {
         if (!SyncRunner.eventListeners[username]) {
             SyncRunner.eventListeners[username] = {};
             SyncRunner.eventListeners[username].timeOutId = 0;
             SyncRunner.eventListeners[username].isWatcherRunning = false;
+            SyncRunner.eventListeners[username].listeners = [];
         }
 
-        SyncRunner.eventListeners[username][folderName] = new FileSystemEventListener(username, folderName, deviceIds);
-        SyncRunner.eventListeners[username][folderName].start();
+        let listener = new FileSystemEventListener(username, folderName, []);
+        listener.start();
+
+        SyncRunner.eventListeners[username].listeners.push({
+            folderName: folderName,
+            listener: listener
+        }); // TODO: set device IDs here
+
+    }
+
+    static removeSyncDirectory(username, folderName) {
+        SyncRunner.eventListeners[username].listeners[folderName].stop();
+        delete SyncRunner.eventListeners[username].listeners[folderName];
     }
 
 }
