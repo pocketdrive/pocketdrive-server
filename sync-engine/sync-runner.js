@@ -30,7 +30,7 @@ export class SyncRunner {
 
     static stopSync() {
         // console.log('Stopping sync engine...');
-        _.each(this.eventListeners, (obj) => {
+        _.each(SyncRunner.eventListeners, (obj) => {
             _.each(obj.listeners, (item) => {
                 item.listener.stop();
             });
