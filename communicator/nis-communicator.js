@@ -109,9 +109,7 @@ export default class NisCommunicator {
                 NisEventListener.ignoreEvents.push(filepath);
             }
 
-            console.log('before >>>>>>>>>>>>>>>>');
-            this.preparePath(filepath);
-            console.log('after >>>>>>>>>>>>>>>>');
+            this.preparePath(path.dirname(filePath));
             const writeStream = fs.createWriteStream(filepath);
             readStream.pipe(writeStream);
 
