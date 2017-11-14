@@ -45,15 +45,15 @@ export class NisRunner {
     }
 
     static addNisDirectory(user, folder) {
-        if (!SyncRunner.eventListeners[username]) {
-            SyncRunner.eventListeners[username] = {};
-            SyncRunner.eventListeners[username].listeners = [];
+        if (!NisRunner.eventListeners[user.username]) {
+            NisRunner.eventListeners[user.username] = {};
+            NisRunner.eventListeners[user.username].listeners = [];
         }
 
         let listener = new NisEventListener(user.username, folder.name, folder.syncDevices[0]);
         listener.start();
 
-        NisRunner.eventListeners[username].listeners.push({
+        NisRunner.eventListeners[user.username].listeners.push({
             folderName: folder.folderName,
             listener: listener
         });
