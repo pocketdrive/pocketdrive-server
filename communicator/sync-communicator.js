@@ -83,15 +83,16 @@ export default class SyncCommunicator {
                             this.callBack(socket, await createOrModifyFile(fullPath, json));
                         }
                     }
-                    if (syncActions.checkExistence(fullOldPath) && syncActions.checkExistence(fullPath)) {
-                        const currentChecksumOld = getFileChecksum(fullOldPath);
-                        const currentChecksumNew = getFileChecksum(fullPath);
-
-                        if (currentChecksumOld === currentChecksumNew) {
-                            fs.unlinkSync(fullOldPath);
-                        }
-                    }
                     else {
+                        if (syncActions.checkExistence(fullOldPath) && syncActions.checkExistence(fullPath)) {
+                            const currentChecksumOld = getFileChecksum(fullOldPath);
+                            const currentChecksumNew = getFileChecksum(fullPath);
+
+                            if (currentChecksumOld === currentChecksumNew) {
+                                fs.unlinkSync(fullOldPath);
+                            }
+                        }
+
                         this.callBack(socket, await createOrModifyFile(fullPath, json));
                     }
 
