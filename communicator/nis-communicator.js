@@ -29,6 +29,7 @@ export default class NisCommunicator {
                 // const fullPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
                 switch (json.type) {
                     case 'getEvents':
+                        console.log('[NIS][SERVER_TO_CARRIER]');
                         // TODO filter by username and otherDevice id
                         NisDBHandler.getEvents(json.username, json.otherDeviceID).then((data) => {
                             data.type = 'getEvents';
@@ -108,7 +109,9 @@ export default class NisCommunicator {
                 NisEventListener.ignoreEvents.push(filepath);
             }
 
+            console.log('before >>>>>>>>>>>>>>>>');
             this.preparePath(filepath);
+            console.log('after >>>>>>>>>>>>>>>>');
             const writeStream = fs.createWriteStream(filepath);
             readStream.pipe(writeStream);
 
