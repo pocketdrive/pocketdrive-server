@@ -106,6 +106,7 @@ export default class NisCommunicator {
             const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
             if (json.ignore) {
+                NisEventListener.ignoreEvents.push(path.dirname(filepath));
                 NisEventListener.ignoreEvents.push(filepath);
             }
 
@@ -115,6 +116,7 @@ export default class NisCommunicator {
 
             writeStream.on('finish', () => {
                 setTimeout(() => {
+                    NisEventListener.ignoreEvents.splice(path.dirname(filepath), 1);
                     NisEventListener.ignoreEvents.splice(filepath, 1);
                 }, 5000);
             })
