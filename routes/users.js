@@ -44,24 +44,38 @@ router.post('/signin', function (req, res) {
 router.post('/signup', function (req, res, next) {
     res.set('Content-Type', 'application/json');
 
-    let userData = req.body.data;
+    const userData = req.body.data;
     userData.password = sha256(userData.password);
-
-    console.log(req.body.data);
 
     dbh.addUser(userData).then((result) => {
         const userPath = path.resolve(process.env.PD_FOLDER_PATH, userData.username);
-        let createDirCmd = `mkdir -p ${userPath}`;
+        const createDirCmd = `mkdir -p ${userPath}`;
 
-        if(result.success){
-            exec(createDirCmd, function (error, stdout, stderr) {
-                if(error){
-                    res.send({success: false});
-                } else{
-                    res.send({success: true});
+        if (result.success) {
+            exec(createDirCmd, (error, stdout, stderr) => {
+                if (error) {
+                    res.send({success: false, error: error});
+                } else {
+                    const smbConfEditCmd = `printf "\\n[${userData.username}]\\npath = ${userPath}\\nvalid users = ${process.env.SMBUSER}\\nread only = no\\n" | sudo tee -a /etc/samba/smb.conf`;
+
+                    exec(smbConfEditCmd, (error, stdout, stderr) => {
+                        if (error) {
+                            res.send({success: false, error: error});
+                        } else {
+                            const sambaRestartCmd = 'sudo service smbd restart';
+
+                            exec(sambaRestartCmd, (error, stdout, stderr) => {
+                                if (error) {
+                                    res.send({success: false, error: error});
+                                } else {
+                                    res.send({success: true});
+                                }
+                            });
+                        }
+                    });
                 }
             });
-        } else{
+        } else {
             res.send(result);
         }
     });
