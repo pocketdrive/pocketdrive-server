@@ -7,6 +7,7 @@ import express from 'express';
 import * as fileUtils from '../utils/file';
 import SyncDbHandler from '../db/sync-db';
 import {CommonUtils} from '../utils/common';
+import {SyncRunner} from "../sync-engine/sync-runner";
 
 const router = express.Router();
 
@@ -42,10 +43,11 @@ router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
 
-    SyncDbHandler.setSyncFolders(req.username, data.deviceId ,data.syncFolders).then((result) => {
+    SyncDbHandler.setSyncFolders(req.username, data.deviceId, data.syncFolders).then((result) => {
+        SyncRunner.restartSyncEngine();
         res.set('Content-Type', 'application/json');
         res.send(result);
-    })
+    });
 
 });
 

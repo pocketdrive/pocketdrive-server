@@ -1,104 +1,131 @@
-import {Server} from 'fast-tcp';
+const io = require('socket.io')();
+const ss = require('socket.io-stream');
+
 import path from 'path';
 import fs from 'fs';
 import * as _ from 'lodash';
 import mkdirp from 'mkdirp';
-import * as fse from 'fs-extra';
 
 import NisDBHandler from '../db/nis-meta-db';
+import NisEventListener from '../nis-engine/nis-event-listener';
 
 /**
  * @author Anuradha Wickramarachchi
  */
 export default class NisCommunicator {
-    clientStats = {};
 
     constructor() {
         // Initialize server to listen for incoming messages
-        this.server = new Server();
-        this.server.on('connection', (socket) => {
-            this.clientStats[socket.id] = {id: socket.id};
+        io.on('connection', (socket) => {
             this.initCommunication(socket);
             console.log('NIS client connected');
         });
-        this.server.listen(5001);
+        io.listen(5001);
         console.log('NIS server started on port 5001');
     }
 
     initCommunication(socket) {
-        socket.on('message', async (json, callBack) => {
+        socket.on('message', (json) => {
                 // const fullPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
                 switch (json.type) {
                     case 'getEvents':
-                        NisDBHandler.getAllEvents().then((data) => {
-                            callBack(data)
+                        console.log('[NIS][SERVER_TO_CARRIER]');
+                        // TODO filter by username and otherDevice id
+                        NisDBHandler.getEvents(json.username, json.otherDeviceID).then((data) => {
+                            data.type = 'getEvents';
+                            this.callBack(socket, data)
                         });
                         break;
+
                     case 'flushEvents':
                         const ids = json.ids || [];
                         _.each(ids, (_id) => {
                             NisDBHandler.deleteEntryById(_id);
                         });
-                        callBack(true);
+
+                        this.callBack(socket, {type: 'flushEvents', data: true});
                         break;
+
                     case 'requestFile':
                         const filePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
                         if (fs.existsSync(filePath)) {
-                            const writeStream = socket.stream('file', {path: json.path, username: json.username});
+                            const writeStream = ss.createStream();
+                            ss(socket).emit('file', writeStream, {path: json.path, username: json.username});
                             fs.createReadStream(filePath).pipe(writeStream);
                         }
 
                         break;
+
                     case 'rename':
                         const oldPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.oldPath);
                         const newPath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
+                        if (json.ignore) {
+                            NisEventListener.ignoreEvents.push(oldPath);
+                            NisEventListener.ignoreEvents.push(newPath);
+                        }
+
                         try {
                             fs.renameSync(oldPath, newPath);
+                            setTimeout(() => {
+                                NisEventListener.ignoreEvents.splice(oldPath, 1);
+                                NisEventListener.ignoreEvents.splice(newPath, 1);
+                            }, 5000);
+
                         } catch (e) {
-                            console.error('COULD NOT RENAME');
+                            console.error('COULD NOT RENAME', e);
                         }
                         break;
+
                     case 'delete':
                         const deletePath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
+                        if (json.ignore) {
+                            NisEventListener.ignoreEvents.push(deletePath);
+                        }
+
                         if (fs.existsSync(deletePath)) {
                             if (fs.statSync(deletePath).isDirectory()) {
-                                fse.removeSync(deletePath);
+                                fs.rmdirSync(deletePath);
                             } else {
                                 fs.unlinkSync(deletePath);
                             }
+
+                            setTimeout(() => {
+                                NisEventListener.ignoreEvents.splice(deletePath, 1)
+                            }, 5000);
                         }
+
                         break;
                 }
             }
         );
 
-        socket.on('file', (readStream, json) => {
-            switch(json.type) {
-                case 'new':
-                    const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
+        ss(socket).on('file', (readStream, json) => {
+            const filepath = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
 
-                    if (json.fileType === 'dir') {
-                        this.preparePath(filepath);
-                    } else if (json.fileType === 'file') {
-                        this.preparePath(path.dirname(filepath));
-                        const writeStream = fs.createWriteStream(filepath);
-
-                        readStream.pipe(writeStream);
-                    }
-                    break;
-                case 'update':
-                    // This is always a file, cannot be a folder
-                    const filepathUpdate = path.join(process.env.PD_FOLDER_PATH, json.username, json.path);
-                    this.preparePath(path.dirname(filepathUpdate));
-                    const writeStreamUpdate = fs.createWriteStream(filepathUpdate);
-
-                    readStream.pipe(writeStreamUpdate);
-                    break;
+            if (json.ignore) {
+                NisEventListener.ignoreEvents.push(path.dirname(filepath));
+                NisEventListener.ignoreEvents.push(filepath);
             }
+
+            this.preparePath(path.dirname(filepath));
+            const writeStream = fs.createWriteStream(filepath);
+            readStream.pipe(writeStream);
+
+            writeStream.on('finish', () => {
+                setTimeout(() => {
+                    NisEventListener.ignoreEvents.splice(path.dirname(filepath), 1);
+                    NisEventListener.ignoreEvents.splice(filepath, 1);
+                }, 5000);
+            })
         });
+
+    }
+
+    callBack(socket, data) {
+        socket.emit('callBack', data);
     }
 
     preparePath(filepath) {

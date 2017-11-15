@@ -23,8 +23,11 @@ export function deleteFile() {
 
 }
 
-export async function createOrModifyFile(fullPath, remoteCurrentCS, remoteSyncedCs) {
-    let reply = {};
+export async function createOrModifyFile(fullPath, json) {
+    const remoteCurrentCS = json.current_cs;
+    const remoteSyncedCs = json.synced_cs;
+
+    let reply = {type: 'onResponse', dbEntry: json.dbEntry};
 
     if (!checkExistence(fullPath)) {
         reply.action = SyncActions.justCopy;

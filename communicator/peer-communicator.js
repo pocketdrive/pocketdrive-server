@@ -27,7 +27,7 @@ export default class PeerCommunicator {
         let attemptCount = 0;
         return await new Promise(resolve => {
             const int = setInterval(() => {
-                if (this.peerObjec.isConnected()) {
+                if (this.peerObject.isConnected()) {
                     resolve(true);
                     clearInterval(int);
                 } else if (attemptCount === 10) {
@@ -75,7 +75,7 @@ export default class PeerCommunicator {
                 msg.message = 'Please check the link or contact file owner';
                 this.messageToPeer(new Buffer(JSON.stringify(msg)), pm.type.json);
             } else {
-                const filePath = path.join(process.env.PD_FOLDER_PATH, username,data.filePath);
+                const filePath = path.join(process.env.PD_FOLDER_PATH, username, data.filePath);
                 const file = fs.readFileSync(filePath);
                 const fileName = path.basename(data.filePath);
 
@@ -144,10 +144,14 @@ export default class PeerCommunicator {
     }
 
     async messageToPeer(buffer, type, data, callback) {
-        if (!this.peerObject.isConnected()) {
+        if (!_.isEmpty(this.peerObject) && !this.peerObject.isConnected()) {
             await this.waitForConnection();
+            this.peerObject.sendBuffer(buffer, type, data, callback);
+        } else if (this.peerObject.isConnected()) {
+            this.peerObject.sendBuffer(buffer, type, data, callback);
+        } else {
+            console.log('P2P Failure');
         }
-        this.peerObject.sendBuffer(buffer, type, data, callback);
     }
 }
 

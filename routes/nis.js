@@ -7,6 +7,7 @@ import express from 'express';
 import * as fileUtils from '../utils/file';
 import {CommonUtils} from '../utils/common';
 import NisDbHandler from "../db/nis-db";
+import {NisRunner} from "../nis-engine/nis-runner";
 
 const router = express.Router();
 
@@ -42,7 +43,8 @@ router.post('/set', CommonUtils.authorize, function (req, res, next) {
     let data = req.body.data;
     // TODO Use sync-flow registerFiles method here for each folder
 
-    NisDbHandler.setSyncFolders(req.username, data.clientId ,data.syncFolders).then((result) => {
+    NisDbHandler.setSyncFolders(req.username, data.clientId, data.syncFolders).then((result) => {
+        NisRunner.restartNis();
         res.set('Content-Type', 'application/json');
         res.send(result);
     })

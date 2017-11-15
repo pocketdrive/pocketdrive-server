@@ -18,6 +18,8 @@ export const ChangeType = {FILE: 'file', DIR: 'dir'};
  */
 export default class FileSystemEventListener {
 
+    static ignoreEvents = [];
+
     constructor(username, folder, deviceIDs) {
         this.pdPath = process.env.PD_FOLDER_PATH;
         this.username = username;
@@ -37,9 +39,15 @@ export default class FileSystemEventListener {
         });
     }
 
+    shouldIgnore(path) {
+        return _.findIndex(FileSystemEventListener.ignoreEvents, (obj) => {
+            return obj === path;
+        }) !== -1;
+    }
+
     start() {
         // noinspection JSUnusedLocalSymbols
-        let monitor = fsmonitor.watch(this.baseDirectory, {
+        this.monitor = fsmonitor.watch(this.baseDirectory, {
             matches: function (relPath) {
                 return relPath.match(/(\/\.)|(\\\.)|^(\.)/) === null;
             },
@@ -48,9 +56,9 @@ export default class FileSystemEventListener {
             }
         });
 
-        console.log('Add watch ', this.baseDirectory);
+        console.log('Sync watch ', this.baseDirectory);
 
-        monitor.on('change', async (change) => {
+        this.monitor.on('change', async (change) => {
             this.changes.push(change);
 
             if (this.serializeLock === 0) {
@@ -69,6 +77,22 @@ export default class FileSystemEventListener {
             _.each(changeList, (relativePath, index) => {
                 change[changeListName][index] = path.join(this.baseDirectory, relativePath);
             });
+        });
+
+        // Ignore files which are being synced now
+        _.each(change, (changeList, changeListName) => {
+            let removables = [];
+            _.each(changeList, (fullPath, index) => {
+                if (this.shouldIgnore(fullPath)) {
+                    removables.push(index);
+                }
+            });
+
+            removables = _.reverse(removables);
+
+            _.each(removables, (index) => {
+                change[changeListName].splice(index, 1);
+            })
         });
 
         if (change.addedFolders.length > 0 && change.addedFolders.length === change.removedFolders.length) {
@@ -193,10 +217,20 @@ export default class FileSystemEventListener {
 
         }
 
+        if (this.changes.length > 0) {
+            this.consume(this.changes.shift());
+        } else {
+            SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
+                SyncRunner.eventListeners[this.username].isWatcherRunning = false;
+            }, 5000);
+        }
+
         this.serializeLock--;
 
-        SyncRunner.eventListeners[this.username].timeOutId = setTimeout(() => {
-            SyncRunner.eventListeners[this.username].isWatcherRunning = false;
-        }, 5000);
+    }
+
+    stop() {
+        this.monitor.close();
+        console.log('Sync unwatch ', this.baseDirectory);
     }
 }

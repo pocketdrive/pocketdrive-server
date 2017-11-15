@@ -1,5 +1,6 @@
 import {exec} from 'child_process';
-const sudo =  require('sudo');
+
+const sudo = require('sudo');
 
 import * as  utils from '../utils/file';
 import nodePath from 'path';
@@ -34,12 +35,10 @@ export default class ShareFolder {
                 delete result.data;
                 let src = path;
                 let dest = nodePath.join(process.env.PD_FOLDER_PATH, candidate.username, process.env.SHARED_FOLDER_NAME, username_from);
-                console.log(dest);
                 if (utils.isDirectoryExists(src)) {
 
                     let createDirCmd = 'mkdir -p ' + '\"' + `${dest}` + '\"';
 
-                    console.log(createDirCmd);
                     exec(createDirCmd, function (error, stdout, stderr) {
                         if (error) {
                             result['success'] = false;
@@ -50,12 +49,10 @@ export default class ShareFolder {
 
                         } else {
                             dest = dest + '/' + folder_name;
-                            console.log(dest);
                             if (!utils.isDirectoryExists(dest)) {
 
                                 createDirCmd = 'mkdir ' + '\"' + `${dest}` + '\"';
 
-                                console.log(createDirCmd);
                                 exec(createDirCmd, function (error, stdout, stderr) {
                                     if (error) {
                                         result['success'] = false;
@@ -66,35 +63,16 @@ export default class ShareFolder {
                                     } else {
 
                                         if (candidate.permission === "rw") {
-                                            console.log('<<<<<<<<<<<< command', 'mount', src, dest, '--bind');
+                                            const child = sudo(['mount', src, dest, '--bind', '-v'], options);
 
-                                            const child = sudo(['mount', src, dest, '--bind'], options)
-
-                                            //////
-                                            console.log("Trying to enter into the database");
-                                            candidate.destpath = dest;
-                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
-                                                if (result.success) {
-                                                    result['success'] = true;
-                                                    callback(result);
-                                                    console.log("successful database entry");
-                                                } else {
-                                                    console.log("Error in inserting into database");
-                                                    callback(result);
-                                                }
-                                            })
-                                            ///////
-
-                                            child.stdout.on('data', () => {
-                                                console.log("Trying to enter into the database");
+                                            child.stdout.on('data', (data) => {
                                                 candidate.destpath = dest;
                                                 ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
                                                     if (result.success) {
                                                         result['success'] = true;
                                                         callback(result);
-                                                        console.log("successful database entry");
                                                     } else {
-                                                        console.log("Error in inserting into database");
+                                                        console.error("Error in inserting into database");
                                                         callback(result);
                                                     }
                                                 })
@@ -110,35 +88,10 @@ export default class ShareFolder {
                                             });
 
                                         } else {
-                                            console.log('read only >>>>>>>');
-                                            console.log('mount', src, dest, '-o', 'bind');
-                                            const child = sudo(['mount', src, dest, '-o', 'bind'], options);
-
-                                            ///////////
-                                            const child2 = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
-                                            candidate.destpath = dest;
-                                            ShareFolderDbHandler.shareFolder(shareObject, candidate).then((result) => {
-                                                if (result.success) {
-                                                    result['success'] = true;
-                                                    callback(result);
-                                                } else {
-                                                    callback(result);
-                                                }
-                                            });
-
-                                            child2.stderr.on('data', (error) => {
-                                                error = error.toString();
-                                                result['success'] = false;
-                                                result['error'] = 'Mounting shared folder failed';
-                                                console.error('Mounting shared folder failed');
-                                                console.error(error);
-                                                callback(result);
-                                            });
-                                            //////////////
+                                            const child = sudo(['mount', src, dest, '-o', 'bind', '-v'], options);
 
                                             child.stdout.on('data', (data) => {
-                                                console.log("insert >>>>>>>>>>>");
-                                                const child = sudo(['mount', dest, '-o', 'remount', 'ro', 'bind'], options);
+                                                const child = sudo(['mount', '-o', 'remount,ro', '--bind', '-v', dest], options);
 
                                                 child.stdout.on('data', (data) => {
                                                     candidate.destpath = dest;
@@ -199,7 +152,6 @@ export default class ShareFolder {
 
 
     static unshare(shareObj, candidate, callback) {
-
         let userObj = {username: candidate};
         dbh.searchUser(userObj).then((result) => {
             if (!result.success) {
@@ -216,33 +168,14 @@ export default class ShareFolder {
                         let user = result.user;
                         let destpath = result.user.destpath;
 
-                        const child = sudo(['umount', destpath], options);
+                        sudo(['umount', destpath, '-v'], options);
+                        const child = sudo(['echo', 'unmounted'], options);
 
-                        child.stdout.on('data', function (data) {
-                            const child = sudo(['rm', '-rf', destpath], options);
+                        child.stdout.on('data', (data) => {
+                            const child = sudo(['rm', '-rf', destpath, '-v'], options);
 
-                            //////////////////
-                            console.log("eliminating candidate");
-
-                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                console.log(result);
-                                if (!result.success) {
-                                    result['success'] = false;
-                                    result['error'] = "Error in eliminating user";
-                                    callback(result);
-                                } else {
-                                    result['success'] = true;
-                                    callback(result);
-                                }
-
-                            });
-                            /////////////
-
-                            child.stdout.on('data', function (data) {
-                                console.log("eliminating candidate");
-
+                            child.stdout.on('data', (data) => {
                                 ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                    console.log(result);
                                     if (!result.success) {
                                         result['success'] = false;
                                         result['error'] = "Error in eliminating user";
@@ -255,16 +188,16 @@ export default class ShareFolder {
                                 });
                             });
 
-                            child.stderr.on('data', function (error) {
+                            child.stderr.on('data', (error) => {
                                 error = error.toString();
-                                result['success'] = error;
+                                result['success'] = false;
                                 result['error'] = 'Error in deleting shared file';
                                 callback(result);
                             });
 
                         });
 
-                        child.stderr.on('data', function (error) {
+                        child.stderr.on('data', (error) => {
                             error = error.toString();
                             result['success'] = false;
                             result['error'] = 'Error in unmounting the shared folder';
@@ -279,9 +212,6 @@ export default class ShareFolder {
     }
 
     static changePermission(shareObj, candidate, callback) {
-
-        let src = shareObj.path;
-
         ShareFolderDbHandler.searchCandidateEntry(shareObj, candidate.username).then((result) => {
             if (!result.success) {
                 result['success'] = false;
@@ -292,74 +222,38 @@ export default class ShareFolder {
                 let dest = result.user.destpath;
 
                 if (candidate.permission !== user.permission) {
+                    if (candidate.permission === 'r') {
+                        const child = sudo(['mount', '-o', 'remount,ro', '--bind', '-v', dest], options);
 
-                    const child = sudo(['umount', dest], options);
-
-                    child.stdout.on('data', function (data) {
-                        if (candidate.permission === 'r') {
-                            const child = sudo(['mount', src, dest, '-o', 'bind'], options);
-
-                            child.stdout.on('data', function (data) {
-                                const child = sudo(['mount', dest, '-o', 'remount,ro,bind'], options);
-
-                                //////////
-                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                    if (!result.success) {
-                                        callback(result)
-                                    } else {
-                                        user.permission = "r";
-                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                            if (!result.success) {
-                                                callback(result);
-                                            } else {
-                                                result['success'] = true;
-                                                callback(result);
-                                            }
-                                        });
-                                    }
-                                });
-                                ////////////////
-
-                                child.stdout.on('data', function (data) {
-                                    ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                        child.stdout.on('data', function (data) {
+                            ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
+                                if (!result.success) {
+                                    callback(result)
+                                } else {
+                                    user.permission = "r";
+                                    ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
                                         if (!result.success) {
-                                            callback(result)
+                                            callback(result);
                                         } else {
-                                            user.permission = "r";
-                                            ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                                if (!result.success) {
-                                                    callback(result);
-                                                } else {
-                                                    result['success'] = true;
-                                                    callback(result);
-                                                }
-                                            });
+                                            result['success'] = true;
+                                            callback(result);
                                         }
                                     });
-                                });
-
-                                child.stderr.on('data', function (error) {
-                                    error = error.toString();
-                                    result['success'] = false;
-                                    result['error'] = 'Error in remounting shared file in read mode';
-                                    console.log(error);
-                                    callback(result);
-                                });
-
+                                }
                             });
+                        });
 
-                            child.stderr.on('data', function (error) {
-                                error = error.toString();
-                                result['success'] = false;
-                                result['error'] = 'Error in mounting shared file in read mode';
-                                console.log(error);
-                                callback(result);
-                            });
+                        child.stderr.on('data', function (error) {
+                            error = error.toString();
+                            result['success'] = false;
+                            result['error'] = 'Error in remounting shared file in read mode';
+                            console.error(error);
+                            callback(result);
+                        });
+                    } else {
+                        const child = sudo(['mount', dest, '-o', 'remount,rw', '--bind', '-v'], options);
 
-                        } else {
-                            const child = sudo(['mount', src, dest, '--bind'], options);
-
-                            ///////////
+                        child.stdout.on('data', function (data) {
                             ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
                                 if (!result.success) {
                                     callback(result)
@@ -375,52 +269,23 @@ export default class ShareFolder {
                                     });
                                 }
                             });
-                            ///////////////
+                        });
 
-                            child.stdout.on('data', function (data) {
-                                ShareFolderDbHandler.eliminateCandidate(shareObj, user).then((result) => {
-                                    if (!result.success) {
-                                        callback(result)
-                                    } else {
-                                        user.permission = "rw";
-                                        ShareFolderDbHandler.shareFolder(shareObj, user).then((result) => {
-                                            if (!result.success) {
-                                                callback(result);
-                                            } else {
-                                                result['success'] = true;
-                                                callback(result);
-                                            }
-                                        });
-                                    }
-                                });
-                            });
-
-                            child.stderr.on('data', function (error) {
-                                error = error.toString();
-                                result['success'] = false;
-                                result['error'] = 'Error in deleting shared file';
-                                callback(result);
-                            });
-
-                        }
-                    });
-
-                    child.stderr.on('data', function (error) {
-                        error = error.toString();
-                        result['success'] = error;
-                        result['error'] = 'Error in unmounting shared file';
-                        console.log(error);
-                        callback(result);
-                    });
+                        child.stderr.on('data', function (error) {
+                            error = error.toString();
+                            result['success'] = false;
+                            result['error'] = 'Error in remounting shared file in read mode';
+                            console.log(error);
+                            callback(result);
+                        });
+                    }
 
                 } else {
                     result['success'] = false;
                     result['error'] = "No change in the permission";
                     callback(result);
                 }
-
             }
-
         });
 
     }
