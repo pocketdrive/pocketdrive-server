@@ -5,6 +5,7 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const fs = require('fs');
 
 const users = require('./routes/users');
 const sync = require('./routes/sync');
@@ -32,6 +33,11 @@ app.use('/user', users);
 app.use('/sync', sync);
 app.use('/nis', nis);
 app.use('/share', share);
+
+app.get('/admin-panel', (req, res) => {
+    "use strict";
+    res.sendFile(__dirname + "/static-pages/admin-register.html");
+});
 
 /**
  * Catch 404 and forward to error handler
