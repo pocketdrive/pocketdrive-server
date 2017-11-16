@@ -26,19 +26,25 @@
                             "picture": null
                         }
                     };
-                    const settings = {
-                        "url": "/user/signup",
-                        "method": "POST",
-                        "headers": {
-                            "content-type": "application/json"
-                        },
-                        "processData": false,
-                        "data": json,
-                    };
+                    const file = document.getElementById('image').files[0];
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = function () {
+                        json.data.picture = reader.result;
+                        const settings = {
+                            "url": "/user/signup",
+                            "method": "POST",
+                            "headers": {
+                                "content-type": "application/json"
+                            },
+                            "processData": false,
+                            "data": json,
+                        };
 
-                    $.ajax(settings).done(() => {
-                        console.log('Success');
-                    });
+                        $.ajax(settings).done(() => {
+                            console.log('Success');
+                        });
+                    };
                 }
             });
         });

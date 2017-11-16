@@ -39,6 +39,11 @@ app.get('/admin-panel', (req, res) => {
     res.sendFile(__dirname + "/static-pages/admin-register.html");
 });
 
+app.get('/admin-login', (req, res) => {
+    "use strict";
+    res.sendFile(__dirname + "/static-pages/admin-login.html");
+});
+
 /**
  * Catch 404 and forward to error handler
  */

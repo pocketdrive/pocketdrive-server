@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pocket Drive Admin Panel</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(() => {
+            $('#form').on('submit', () => {
+                alert('yeyi')
+                const json = {
+                    data: {
+                        "username": $('#username').val(),
+                        "password": $('#password').val(),
+                    }
+                };
+
+                const settings = {
+                    "url": "/user/login",
+                    "method": "POST",
+                    "headers": {
+                        "content-type": "application/json"
+                    },
+                    "processData": false,
+                    "data": json,
+                };
+
+                $.ajax(settings).done(() => {
+                    console.log('Success');
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+<hr>
+<h2 class="text-center">User Registration</h2>
+<hr>
+<div class="container center">
+    <div class="">
+        <form class="form-horizontal" onsubmit="return false;">
+            <fieldset>
+
+                <!-- Form Name -->
+                <legend>Form Name</legend>
+
+                <!-- Text input-->
+                <div class="form-group">
+                    <label class="col-md-4 control-label" for="username">Username</label>
+                    <div class="col-md-4">
+                        <input id="username" name="username" type="text" placeholder="" class="form-control input-md" required="">
+
+                    </div>
+                </div>
+
+                <!-- Password input-->
+                <div class="form-group">
+                    <label class="col-md-4 control-label" for="password">Password</label>
+                    <div class="col-md-4">
+                        <input id="password" name="password" type="password" placeholder="" class="form-control input-md" required="">
+
+                    </div>
+                </div>
+
+                <!-- Button -->
+                <div class="form-group">
+                    <label class="col-md-4 control-label" for="login"></label>
+                    <div class="col-md-4">
+                        <button id="login" name="login" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+
+            </fieldset>
+        </form>
+
+
+    </div>
+</div>
+
+</body>
+</html>
