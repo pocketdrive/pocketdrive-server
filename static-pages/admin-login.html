@@ -10,7 +10,6 @@
     <script>
         $(document).ready(() => {
             $('#form').on('submit', () => {
-                alert('yeyi')
                 const json = {
                     data: {
                         "username": $('#username').val(),
@@ -39,27 +38,24 @@
 <hr>
 <h2 class="text-center">User Registration</h2>
 <hr>
-<div class="container center">
-    <div class="">
+<div class="container">
+    <div class="cols-sm-8">
         <form class="form-horizontal" onsubmit="return false;">
             <fieldset>
 
-                <!-- Form Name -->
-                <legend>Form Name</legend>
-
                 <!-- Text input-->
-                <div class="form-group">
+                <div class="form-group row">
                     <label class="col-md-4 control-label" for="username">Username</label>
-                    <div class="col-md-4">
-                        <input id="username" name="username" type="text" placeholder="" class="form-control input-md" required="">
+                    <div class="col-md-8">
+                        <input id="username" name="username" type="text" placeholder="" class="form-control input-md" required="" value="root" disabled>
 
                     </div>
                 </div>
 
                 <!-- Password input-->
-                <div class="form-group">
+                <div class="form-group row">
                     <label class="col-md-4 control-label" for="password">Password</label>
-                    <div class="col-md-4">
+                    <div class="col-md-8">
                         <input id="password" name="password" type="password" placeholder="" class="form-control input-md" required="">
 
                     </div>
