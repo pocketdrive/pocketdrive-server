@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Pocket Drive Admin Panel</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
     <script>
@@ -31,19 +31,19 @@
                     reader.readAsDataURL(file);
                     reader.onload = function () {
                         json.data.picture = reader.result;
-                        const settings = {
-                            "url": "/user/signup",
-                            "method": "POST",
-                            "headers": {
-                                "content-type": "application/json"
-                            },
-                            "processData": false,
-                            "data": json,
-                        };
+                        const xhr = new XMLHttpRequest();
+                        xhr.withCredentials = true;
 
-                        $.ajax(settings).done(() => {
-                            console.log('Success');
+                        xhr.addEventListener("readystatechange", function () {
+                            if (this.readyState === 4) {
+                                console.log(this.responseText);
+                            }
                         });
+
+                        xhr.open("POST", "/user/signup");
+                        xhr.setRequestHeader("content-type", "application/json");
+
+                        xhr.send(JSON.stringify(json));
                     };
                 }
             });

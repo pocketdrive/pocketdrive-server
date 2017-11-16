@@ -41,12 +41,13 @@ router.post('/signin', function (req, res) {
 
 });
 
-router.post('/signin/admin', function (req, res) {
+router.post('/signin-admin', function (req, res) {
     res.set('Content-Type', 'application/json');
 
     let userData = req.body.data;
     userData.password = sha256(userData.password);
     userData.username = 'root';
+
 
     dbh.searchUser(userData).then((result) => {
         res.send(result);
